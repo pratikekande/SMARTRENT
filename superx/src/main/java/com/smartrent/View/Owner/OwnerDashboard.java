@@ -1,11 +1,13 @@
 package com.smartrent.View.Owner;
 
+
 import com.smartrent.View.Signin;
 import com.smartrent.View.Owner.Component.OSidebar;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.smartrent.Controller.*;
 import com.smartrent.Model.Owner.Flat;
+
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -16,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -27,11 +30,14 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+
 public class OwnerDashboard {
+
 
     private BorderPane root;
     private OSidebar sidebar;
@@ -43,29 +49,36 @@ public class OwnerDashboard {
     private Label ownerName;
     private VBox flatsListContainer;
 
+
     public Scene createScene(Stage stage, String ownerId) {
         this.primaryStage = stage;
         this.ownerId = ownerId;
         this.ds = new dataservice();
         root = new BorderPane();
 
+
         sidebar = new OSidebar("Owner Dashboard");
         root.setLeft(sidebar);
+
 
         contentWrapper = new BorderPane();
         Node profileHeader = createProfileHeader();
         contentWrapper.setTop(profileHeader);
         root.setCenter(contentWrapper);
 
+
         this.dashboardView = createDashboardView();
         contentWrapper.setCenter(this.dashboardView);
+
 
         setupNavigation();
         loadOwnerName();
         loadOwnerFlats();
 
+
         return new Scene(root, 1280, 720);
     }
+
 
     private void loadOwnerName() {
         CompletableFuture.supplyAsync(() -> {
@@ -87,15 +100,19 @@ public class OwnerDashboard {
         });
     }
 
+
     private void loadOwnerFlats() {
         if (flatsListContainer == null) return;
+
 
         flatsListContainer.getChildren().clear();
         flatsListContainer.getChildren().add(new Label("Loading properties..."));
 
+
         CompletableFuture.runAsync(() -> {
             try {
                 List<QueryDocumentSnapshot> documents = ds.getFlatsByOwner(this.ownerId);
+
 
                 Platform.runLater(() -> {
                     flatsListContainer.getChildren().clear();
@@ -122,6 +139,7 @@ public class OwnerDashboard {
         });
     }
 
+
     private Node createProfileHeader() {
         ImageView profileImageView = new ImageView();
         try {
@@ -131,16 +149,20 @@ public class OwnerDashboard {
             profileImageView.setImage(new Image("https://i.imgur.com/S12F2sC.png"));
         }
 
+
         profileImageView.setFitWidth(36);
         profileImageView.setFitHeight(36);
         profileImageView.setClip(new Circle(18, 18, 18));
 
+
         ownerName = new Label("Loading...");
         ownerName.setFont(Font.font("System", FontWeight.SEMI_BOLD, 15));
+
 
         HBox profileBox = new HBox(10, profileImageView, ownerName);
         profileBox.setAlignment(Pos.CENTER);
         profileBox.setCursor(Cursor.HAND);
+
 
         profileBox.setOnMouseClicked(e -> {
             sidebar.highlight("");
@@ -155,21 +177,24 @@ public class OwnerDashboard {
             contentWrapper.setCenter(profileView);
         });
 
+
         HBox headerBar = new HBox(profileBox);
         headerBar.setAlignment(Pos.CENTER_RIGHT);
         headerBar.setPadding(new Insets(15, 40, 15, 40));
         headerBar.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;");
 
+
         return headerBar;
     }
+
 
     private void setupNavigation() {
         sidebar.getMenuButtons()[0].setOnAction(e -> {
             sidebar.highlight("Owner Dashboard");
             contentWrapper.setCenter(this.dashboardView);
-            // Refresh the list of flats to ensure any changes (e.g., a removed tenant) are displayed.
             loadOwnerFlats();
         });
+
 
         sidebar.getMenuButtons()[1].setOnAction(e -> {
             sidebar.highlight("Tenant Management");
@@ -181,17 +206,20 @@ public class OwnerDashboard {
             contentWrapper.setCenter(tenantView);
         });
 
+
         sidebar.getMenuButtons()[2].setOnAction(e -> {
             sidebar.highlight("Rent Management");
             RentManagement rentPage = new RentManagement();
             contentWrapper.setCenter(rentPage.getView());
         });
 
+
         sidebar.getMenuButtons()[3].setOnAction(e -> {
             sidebar.highlight("Maintenance");
             MaintananceRequest maintenancePage = new MaintananceRequest();
             contentWrapper.setCenter(maintenancePage.getView());
         });
+
 
         sidebar.getMenuButtons()[4].setOnAction(e -> {
             System.out.println("Logging out... Navigating to Signin Page.");
@@ -204,6 +232,7 @@ public class OwnerDashboard {
         });
     }
 
+
     private Node createDashboardView() {
         // --- LEFT PANEL (Main Content) ---
         Text welcomeTitle = new Text("Welcome");
@@ -214,11 +243,14 @@ public class OwnerDashboard {
         welcomeSubtitle.setFill(Color.web("#6B7280"));
         VBox welcomeHeader = new VBox(5, welcomeTitle, welcomeSubtitle);
 
+
         Label propertiesTitle = new Label("Property Overview");
         propertiesTitle.setFont(Font.font("System", FontWeight.BOLD, 22));
 
+
         this.flatsListContainer = new VBox(20);
         flatsListContainer.setPadding(new Insets(10));
+
 
         ScrollPane scrollableFlats = new ScrollPane(flatsListContainer);
         scrollableFlats.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -226,20 +258,23 @@ public class OwnerDashboard {
         scrollableFlats.setFitToWidth(true);
         VBox.setVgrow(scrollableFlats, Priority.ALWAYS);
 
+
         VBox propertiesCard = new VBox(20);
         propertiesCard.setPadding(new Insets(20));
         propertiesCard.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1;");
         propertiesCard.getChildren().addAll(propertiesTitle, scrollableFlats);
         VBox.setVgrow(propertiesCard, Priority.ALWAYS);
 
+
         VBox mainContent = new VBox(25, welcomeHeader, propertiesCard);
         mainContent.setPadding(new Insets(20, 40, 40, 40));
         HBox.setHgrow(mainContent, Priority.ALWAYS);
 
+
         // --- RIGHT PANEL ---
-        HBox addFlatCard = new HBox(15);
+        HBox addFlatCard = new HBox(10);
         addFlatCard.setAlignment(Pos.CENTER_LEFT);
-        addFlatCard.setPadding(new Insets(25, 30, 25, 30));
+        addFlatCard.setPadding(new Insets(12, 30, 12, 30));
         addFlatCard.setStyle("-fx-background-color: #4338CA; -fx-background-radius: 12;");
         addFlatCard.setCursor(Cursor.HAND);
         addFlatCard.setOnMouseClicked(e -> {
@@ -253,29 +288,36 @@ public class OwnerDashboard {
             contentWrapper.setCenter(flatDetailsView);
         });
 
+
         Label plusSign = new Label("+");
         plusSign.setFont(Font.font("System", FontWeight.BOLD, 24));
         plusSign.setTextFill(Color.WHITE);
+
 
         Label addFlatLabel = new Label("Add New Flat");
         addFlatLabel.setFont(Font.font("System", FontWeight.BOLD, 18));
         addFlatLabel.setTextFill(Color.WHITE);
 
+
         addFlatCard.getChildren().addAll(plusSign, addFlatLabel);
 
+
         VBox upcomingRentCard = new VBox(8);
-        upcomingRentCard.setPadding(new Insets(25));
+        upcomingRentCard.setPadding(new Insets(10));
         upcomingRentCard.setStyle("-fx-background-color: #F1F5F9; -fx-background-radius: 12;");
         upcomingRentCard.setAlignment(Pos.TOP_LEFT);
+
 
         Label upcomingRentTitle = new Label("Upcoming Rent");
         upcomingRentTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
         upcomingRentTitle.setTextFill(Color.web("#1f2937"));
 
+
         Label rentAmountLabel = new Label("₹12,000");
         rentAmountLabel.setFont(Font.font("System", FontWeight.BOLD, 30));
         rentAmountLabel.setTextFill(Color.web("#10B981"));
         rentAmountLabel.setPadding(new Insets(5, 0, 8, 0));
+
 
         VBox rentDetails = new VBox(8);
         HBox rentRow3 = new HBox(10, new Label("Due Date:"), new Label("05 Aug 2025"));
@@ -288,18 +330,22 @@ public class OwnerDashboard {
         rentDetails.getChildren().addAll(rentRow3);
         upcomingRentCard.getChildren().addAll(upcomingRentTitle, rentAmountLabel, rentDetails);
 
+
         VBox maintenanceBox = new VBox(15);
-        maintenanceBox.setPadding(new Insets(25));
+        maintenanceBox.setPadding(new Insets(14));
         maintenanceBox.setStyle("-fx-background-color: #ffffff; -fx-border-color: #E5E7EB; -fx-border-width: 1; -fx-background-radius: 12;");
+
 
         Label maintenanceTitle = new Label("Recent Notifications");
         maintenanceTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
         maintenanceTitle.setTextFill(Color.web("#111827"));
 
+
         Label maintenanceDesc = new Label("Important alerts and reminders.");
         maintenanceDesc.setFont(Font.font("System", 14));
         maintenanceDesc.setTextFill(Color.web("#6B7280"));
         VBox.setMargin(maintenanceDesc, new Insets(0, 0, 10, 0));
+
 
         VBox alertsContainer = new VBox(20);
         alertsContainer.getChildren().addAll(
@@ -309,16 +355,63 @@ public class OwnerDashboard {
         );
         maintenanceBox.getChildren().addAll(maintenanceTitle, maintenanceDesc, alertsContainer);
 
+
+        // --- NEW: Create AI Chat Button ---
+        Node aiChatButton = createAIChatButton();
+        // Wrap the button in an HBox to align it to the right
+        HBox chatButtonContainer = new HBox(aiChatButton);
+        chatButtonContainer.setAlignment(Pos.CENTER_RIGHT);
+
         VBox rightPanel = new VBox(20);
         rightPanel.setPadding(new Insets(20, 40, 40, 0));
         rightPanel.setPrefWidth(420);
-        rightPanel.getChildren().addAll(addFlatCard, upcomingRentCard, maintenanceBox);
+        // Add all right-side components, including the new chat button container
+        rightPanel.getChildren().addAll(addFlatCard, upcomingRentCard, maintenanceBox, chatButtonContainer);
+
 
         HBox dashboardLayout = new HBox(mainContent, rightPanel);
         dashboardLayout.setStyle("-fx-background-color: #F9FAFB;");
 
+
         return dashboardLayout;
     }
+
+
+    /**
+     * Creates a button for the AI Chat feature.
+     * @return A Node representing the AI Chat button.
+     */
+    private Node createAIChatButton() {
+        StackPane aiChatButton = new StackPane();
+        aiChatButton.setCursor(Cursor.HAND);
+
+        // The purple circle background for the button
+        Circle background = new Circle(35, Color.web("#4F46E5"));
+
+        // A robot emoji as the icon
+        Label icon = new Label("🤖");
+        icon.setFont(Font.font(30));
+
+        aiChatButton.getChildren().addAll(background, icon);
+
+        Tooltip.install(aiChatButton, new Tooltip("Chat with AI Assistant"));
+
+        // Set the action to navigate to the chat page
+        aiChatButton.setOnMouseClicked(e -> {
+            sidebar.highlight(""); // Deselect any active sidebar item
+            
+            AIChatPage chatPage = new AIChatPage();
+            Node chatView = chatPage.getView(() -> {
+                // Action for the 'back' button inside the chat page
+                sidebar.highlight("Owner Dashboard");
+                contentWrapper.setCenter(this.dashboardView);
+            });
+            contentWrapper.setCenter(chatView);
+        });
+
+        return aiChatButton;
+    }
+
 
     private HBox createAlert(String icon, String bgColor, String iconColor, String title, String subtitle) {
         StackPane iconPane = new StackPane();
@@ -327,6 +420,7 @@ public class OwnerDashboard {
         iconTxt.setFont(Font.font(16));
         iconTxt.setTextFill(Color.web(iconColor));
         iconPane.getChildren().addAll(iconBg, iconTxt);
+
 
         VBox textPane = new VBox(2);
         Label mainTxt = new Label(title);
@@ -337,19 +431,23 @@ public class OwnerDashboard {
         subTxt.setTextFill(Color.web("#6B7280"));
         textPane.getChildren().addAll(mainTxt, subTxt);
 
+
         HBox alert = new HBox(15, iconPane, textPane);
         alert.setAlignment(Pos.CENTER_LEFT);
         return alert;
     }
+
 
     private Node createFlatEntry(Flat flat, int propertyNumber) {
         VBox entryCard = new VBox(15);
         entryCard.setPadding(new Insets(20));
         entryCard.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1; -fx-background-radius: 12;");
 
+
         Label titleLabel = new Label("Property #" + propertyNumber);
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 18));
         titleLabel.setTextFill(Color.web("#111827"));
+
 
         ImageView imageView = new ImageView();
         try {
@@ -361,8 +459,10 @@ public class OwnerDashboard {
             imageView.setImage(new Image("https://i.imgur.com/S12F2sC.png"));
         }
 
+
         imageView.setFitWidth(250);
         imageView.setPreserveRatio(true);
+
 
         StackPane imageContainer = new StackPane(imageView);
         imageContainer.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 8;");
@@ -373,9 +473,11 @@ public class OwnerDashboard {
         clip.heightProperty().bind(imageContainer.heightProperty());
         imageContainer.setClip(clip);
 
+
         GridPane detailsGrid = new GridPane();
         detailsGrid.setVgap(8);
         detailsGrid.setHgap(10);
+
 
         detailsGrid.add(createDetailLabel("Society Name:"), 0, 0);
         detailsGrid.add(createDetailValue(flat.getSocietyName()), 1, 0);
@@ -390,22 +492,21 @@ public class OwnerDashboard {
         detailsGrid.add(createDetailLabel("Monthly Rent:"), 0, 5);
         detailsGrid.add(createDetailValue("₹" + flat.getRent()), 1, 5);
 
-        // --- Add Update Button ---
-    Button updateBtn = new Button("Update");
-    updateBtn.setFont(Font.font("System", FontWeight.BOLD, 13));
-    updateBtn.setStyle("-fx-background-color: #4F46E5; -fx-text-fill: white; -fx-background-radius: 6;");
-    updateBtn.setCursor(Cursor.HAND);
 
-    // No action attached
-    // updateBtn.setOnAction(...); ← Removed
+        Button updateBtn = new Button("Update");
+        updateBtn.setFont(Font.font("System", FontWeight.BOLD, 13));
+        updateBtn.setStyle("-fx-background-color: #4F46E5; -fx-text-fill: white; -fx-background-radius: 6;");
+        updateBtn.setCursor(Cursor.HAND);
 
-    HBox buttonBox = new HBox(updateBtn);
-    buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
-    entryCard.getChildren().addAll(titleLabel, imageContainer, detailsGrid, buttonBox);
-    return entryCard;
+        HBox buttonBox = new HBox(updateBtn);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
-}
+        entryCard.getChildren().addAll(titleLabel, imageContainer, detailsGrid, buttonBox);
+        return entryCard;
+
+    }
+
 
     private Label createDetailLabel(String text) {
         Label label = new Label(text);
@@ -413,6 +514,7 @@ public class OwnerDashboard {
         label.setTextFill(Color.web("#374151"));
         return label;
     }
+
 
     private Label createDetailValue(String text) {
         Label label = new Label(text);
