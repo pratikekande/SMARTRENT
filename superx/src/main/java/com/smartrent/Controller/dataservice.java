@@ -136,6 +136,19 @@ public class dataservice {
     }
 
     /**
+     * Updates an existing flat document in Firestore with new data.
+     * @param flatId The unique ID of the document to update.
+     * @param data A map containing the fields and new values to update.
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    public void updateFlat(String flatId, Map<String, Object> data) throws ExecutionException, InterruptedException {
+        DocumentReference flatRef = db.collection("flats").document(flatId);
+        flatRef.update(data).get();
+        System.out.println("Flat details updated for document: " + flatId);
+    }
+
+    /**
      * Updates a flat document to remove tenant information by setting tenant fields to null.
      * This effectively makes the flat vacant without deleting the property record.
      * @param flatId The document ID of the flat to update.
