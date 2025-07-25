@@ -2,7 +2,7 @@ package com.smartrent.View.Owner;
 
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.smartrent.Controller.dataservice;
-import com.smartrent.Model.Owner.Flat; // ✅ MODIFIED: Use the Flat model
+import com.smartrent.Model.Owner.Flat;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -13,20 +13,17 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class TenantManagement {
 
-    // ✅ NEW: Member variables for data service, owner ID, and the UI container
     private dataservice ds;
     private String ownerId;
     private VBox tenantListContainer;
 
-    /**
-     * ✅ NEW: Constructor to accept the DataService and ownerId.
-     * This replaces the old empty constructor.
-     */
     public TenantManagement(dataservice ds, String ownerId) {
         this.ds = ds;
         this.ownerId = ownerId;
@@ -36,26 +33,24 @@ public class TenantManagement {
         // --- Header Section ---
         Text title = new Text("Tenants");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
-    
-        
+
         Region spacerHeader = new Region();
         HBox.setHgrow(spacerHeader, Priority.ALWAYS);
-        
+
         HBox headerBox = new HBox(20, title, spacerHeader);
         headerBox.setAlignment(Pos.CENTER_LEFT);
 
         // --- Left Side: Scrollable Tenant List ---
-        // ✅ MODIFIED: Initialize the member variable
         tenantListContainer = new VBox(20);
         tenantListContainer.setPadding(new Insets(10, 10, 10, 0));
-        
+
         ScrollPane scrollPane = new ScrollPane(tenantListContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
 
         // --- Right Side: Documents Card (Static example) ---
-        VBox rightColumn = createDocumentsCard(); // Moved to a helper method for clarity
+        VBox rightColumn = createDocumentsCard();
 
         // --- Main Layout ---
         HBox mainContentBox = new HBox(30, scrollPane, rightColumn);
@@ -65,27 +60,24 @@ public class TenantManagement {
         managementViewLayout.setPadding(new Insets(40, 50, 50, 50));
         managementViewLayout.setStyle("-fx-background-color: #f1f5f9;");
 
-        // ✅ NEW: Load the tenant data from Firestore
         loadTenants();
 
         return managementViewLayout;
     }
 
-    /**
-     * ✅ NEW METHOD
-     * Fetches flat/tenant data from Firestore on a background thread and updates the UI.
-     */
     private void loadTenants() {
         tenantListContainer.getChildren().setAll(new Label("Loading tenants..."));
 
         Task<List<Flat>> fetchTenantsTask = new Task<>() {
             @Override
             protected List<Flat> call() throws Exception {
-                // Fetch all flats belonging to the owner
                 List<QueryDocumentSnapshot> documents = ds.getFlatsByOwner(ownerId);
                 List<Flat> flats = new ArrayList<>();
                 for (QueryDocumentSnapshot doc : documents) {
-                    flats.add(doc.toObject(Flat.class));
+                    // ✅ MODIFIED: Convert the document to a Flat object AND set its ID.
+                    Flat flat = doc.toObject(Flat.class);
+                    flat.setFlatId(doc.getId()); // This is the crucial step
+                    flats.add(flat);
                 }
                 return flats;
             }
@@ -98,7 +90,6 @@ public class TenantManagement {
                 tenantListContainer.getChildren().add(new Label("No tenants found."));
             } else {
                 for (Flat flat : flats) {
-                    // Create a UI card for each flat/tenant
                     if (flat.getTenantName() != null && !flat.getTenantName().isEmpty()) {
                         tenantListContainer.getChildren().add(createTenantCard(flat));
                     }
@@ -114,10 +105,6 @@ public class TenantManagement {
         new Thread(fetchTenantsTask).start();
     }
 
-    /**
-     * ✅ REVISED METHOD
-     * Creates a card using the Flat model and displays tenant-centric info.
-     */
     private VBox createTenantCard(Flat flat) {
         VBox card = new VBox(15);
         card.setPadding(new Insets(20));
@@ -125,42 +112,83 @@ public class TenantManagement {
 
         Text tenantName = new Text(flat.getTenantName());
         tenantName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        
+
         GridPane detailsGrid = new GridPane();
         detailsGrid.setHgap(40);
         detailsGrid.setVgap(12);
 
         detailsGrid.add(createDetailLabel("Society Name"), 0, 0);
         detailsGrid.add(createDetailValue(flat.getSocietyName()), 1, 0);
-        
         detailsGrid.add(createDetailLabel("Flat No"), 0, 1);
         detailsGrid.add(createDetailValue(flat.getFlatNo()), 1, 1);
-        
         detailsGrid.add(createDetailLabel("Address"), 0, 2);
         detailsGrid.add(createDetailValue(flat.getAddress()), 1, 2);
-        
         detailsGrid.add(createDetailLabel("Monthly Rent"), 0, 3);
         detailsGrid.add(createDetailValue("₹" + flat.getRent()), 1, 3);
-        
         detailsGrid.add(createDetailLabel("Email Address"), 0, 4);
         detailsGrid.add(createDetailValue(flat.getTenantEmail()), 1, 4);
 
-         // --- ADDED: Delete Button (NO LOGIC ATTACHED) ---
+        // --- ✅ MODIFIED: Delete Button with Logic ---
         Button deleteButton = new Button("Delete Tenant");
         deleteButton.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;");
-        // No setOnAction event handler is added here, as per your strict instruction.
+        // Attach the action handler which calls our new method
+        deleteButton.setOnAction(e -> handleDeleteTenant(flat, card));
 
-        HBox buttonContainer = new HBox(); // Use an HBox to control button alignment
-        buttonContainer.getChildren().add(deleteButton);
-        buttonContainer.setAlignment(Pos.CENTER_RIGHT); // Align the button to the right within its HBox
-        buttonContainer.setPadding(new Insets(10, 0, 0, 0)); // Add some top padding to separate it from details
-        
-        card.getChildren().addAll(tenantName, new Separator(), detailsGrid);
+        HBox buttonContainer = new HBox(deleteButton);
+        buttonContainer.setAlignment(Pos.CENTER_RIGHT);
+        buttonContainer.setPadding(new Insets(10, 0, 0, 0));
+
+        // ✅ MODIFIED: Add the button container to the card's layout
+        card.getChildren().addAll(tenantName, new Separator(), detailsGrid, buttonContainer);
         return card;
     }
-    
+
+    // ✅ ADDED: This new method handles the full deletion process with user confirmation.
+    private void handleDeleteTenant(Flat flat, VBox cardToRemove) {
+        Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationAlert.setTitle("Confirm Deletion");
+        confirmationAlert.setHeaderText("Remove Tenant: " + flat.getTenantName());
+        confirmationAlert.setContentText("Are you sure you want to remove this tenant from the property? This action cannot be undone.");
+
+        Optional<ButtonType> result = confirmationAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            // User confirmed, so proceed on a background thread
+            Task<Void> deleteTask = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    ds.removeTenantFromFlat(flat.getFlatId());
+                    return null;
+                }
+            };
+
+            deleteTask.setOnSucceeded(e -> {
+                Platform.runLater(() -> {
+                    tenantListContainer.getChildren().remove(cardToRemove);
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Success");
+                    successAlert.setHeaderText(null);
+                    successAlert.setContentText("Tenant successfully removed.");
+                    successAlert.showAndWait();
+                });
+            });
+
+            deleteTask.setOnFailed(e -> {
+                Platform.runLater(() -> {
+                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                    errorAlert.setTitle("Error");
+                    errorAlert.setHeaderText("Could not remove tenant.");
+                    errorAlert.setContentText("An error occurred while trying to update the database. Please try again.");
+                    errorAlert.showAndWait();
+                });
+                deleteTask.getException().printStackTrace();
+            });
+
+            new Thread(deleteTask).start();
+        }
+    }
+
     // --- Helper Methods (Unchanged) ---
-    
+
     private VBox createDocumentsCard() {
         Text docTitle = new Text("Documents");
         docTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
@@ -181,7 +209,7 @@ public class TenantManagement {
         rightColumn.setAlignment(Pos.CENTER);
         return rightColumn;
     }
-    
+
     private Text createDetailLabel(String text) {
         Text label = new Text(text);
         label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));

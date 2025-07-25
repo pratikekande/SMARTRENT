@@ -1,4 +1,4 @@
-package com.smartrent.Model.Owner; // Or your preferred model package
+package com.smartrent.Model.Owner;
 
 public class Flat {
 
@@ -9,7 +9,13 @@ public class Flat {
     private String tenantEmail;
     private int rent;
     private String imageUrl;
-    private String ownerEmail; // To link the flat to the owner
+    private String ownerEmail;
+
+    /**
+     * A field to store the unique document ID from Firestore. This is crucial for
+     * identifying which document to update or delete.
+     */
+    private String flatId;
 
     // --- Getters and Setters ---
 
@@ -75,5 +81,21 @@ public class Flat {
 
     public void setOwnerEmail(String ownerEmail) {
         this.ownerEmail = ownerEmail;
+    }
+
+    /**
+     * Gets the unique Firestore document ID for the flat.
+     * @return The flat's document ID as a String.
+     */
+    public String getFlatId() {
+        return flatId;
+    }
+
+    /**
+     * Sets the unique Firestore document ID for the flat.
+     * @param flatId The document ID to store.
+     */
+    public void setFlatId(String flatId) {
+        this.flatId = flatId;
     }
 }

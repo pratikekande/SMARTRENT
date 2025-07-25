@@ -9,6 +9,7 @@ import com.google.firebase.cloud.FirestoreClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -29,7 +30,7 @@ public class dataservice {
 
         try {
             InputStream serviceAccount = dataservice.class.getClassLoader().getResourceAsStream("firebase-key.json");
-            
+
             if (serviceAccount == null) {
                 System.err.println("CRITICAL ERROR: 'firebase-key.json' not found in resources folder.");
                 return;
@@ -88,7 +89,7 @@ public class dataservice {
         future.get(); // Wait for the update to complete
         System.out.println("Data updated for document: " + document);
     }
-    
+
     public void addTenantData(String collection, String document, Map<String, Object> data)
             throws InterruptedException, ExecutionException {
         DocumentReference docRef = db.collection(collection).document(document);
@@ -133,7 +134,23 @@ public class dataservice {
         ApiFuture<QuerySnapshot> querySnapshot = query.get();
         return querySnapshot.get().getDocuments();
     }
-    
+
+    /**
+     * Updates a flat document to remove tenant information by setting tenant fields to null.
+     * This effectively makes the flat vacant without deleting the property record.
+     * @param flatId The document ID of the flat to update.
+     * @throws ExecutionException if the database operation fails.
+     * @throws InterruptedException if the thread is interrupted while waiting.
+     */
+    public void removeTenantFromFlat(String flatId) throws ExecutionException, InterruptedException {
+        DocumentReference flatRef = db.collection("flats").document(flatId);
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("tenantName", null);
+        updates.put("tenantEmail", null);
+        flatRef.update(updates).get(); // .get() waits for the operation to complete
+        System.out.println("Tenant removed from flat: " + flatId);
+    }
+
     // --- Payment Data Methods ---
 
     public void addPayment(String collection, String document, Object data)
@@ -153,7 +170,7 @@ public class dataservice {
         ApiFuture<QuerySnapshot> future = db.collection(collection).get();
         return future.get().getDocuments();
     }
-    
+
     public List<QueryDocumentSnapshot> getPaymentsForTenant(String tenantEmail)
             throws InterruptedException, ExecutionException {
         ApiFuture<QuerySnapshot> future = db.collection("Payments")
@@ -184,7 +201,7 @@ public class dataservice {
     }
 
     /**
-     * MODIFIED: Retrieves all documents from a collection.
+     * Retrieves all documents from a collection.
      * If the collection is "MaintenanceRequests", it sorts them by date in descending order.
      */
     public List<QueryDocumentSnapshot> getAllData(String collection) throws InterruptedException, ExecutionException {
@@ -192,15 +209,13 @@ public class dataservice {
             System.err.println("Firestore database is not initialized. Call initializefirebase() first.");
             return null;
         }
-        
+
         Query query = db.collection(collection);
-        
-        // This 'if' statement makes the sorting safe.
-        // It only sorts the MaintenanceRequests collection.
+
         if ("MaintenanceRequests".equals(collection)) {
             query = query.orderBy("submittedAt", Query.Direction.DESCENDING);
         }
-        
+
         ApiFuture<QuerySnapshot> future = query.get();
         return future.get().getDocuments();
     }

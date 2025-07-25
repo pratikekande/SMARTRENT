@@ -13,6 +13,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
@@ -166,6 +167,8 @@ public class OwnerDashboard {
         sidebar.getMenuButtons()[0].setOnAction(e -> {
             sidebar.highlight("Owner Dashboard");
             contentWrapper.setCenter(this.dashboardView);
+            // Refresh the list of flats to ensure any changes (e.g., a removed tenant) are displayed.
+            loadOwnerFlats();
         });
 
         sidebar.getMenuButtons()[1].setOnAction(e -> {
@@ -225,12 +228,10 @@ public class OwnerDashboard {
 
         VBox propertiesCard = new VBox(20);
         propertiesCard.setPadding(new Insets(20));
-        // REMOVED -fx-background-radius to fix scrollbar rendering issue
         propertiesCard.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1;");
         propertiesCard.getChildren().addAll(propertiesTitle, scrollableFlats);
-        VBox.setVgrow(propertiesCard, Priority.ALWAYS); // Make the card grow vertically
+        VBox.setVgrow(propertiesCard, Priority.ALWAYS);
 
-        // CORRECTED: The mainContent VBox now correctly contains the propertiesCard
         VBox mainContent = new VBox(25, welcomeHeader, propertiesCard);
         mainContent.setPadding(new Insets(20, 40, 40, 40));
         HBox.setHgrow(mainContent, Priority.ALWAYS);
@@ -243,7 +244,6 @@ public class OwnerDashboard {
         addFlatCard.setCursor(Cursor.HAND);
         addFlatCard.setOnMouseClicked(e -> {
             sidebar.highlight("");
-            // CLEANED UP: Removed redundant object creation
             FlatDetails flatDetailsPage = new FlatDetails(this.ds, this.ownerId);
             Node flatDetailsView = flatDetailsPage.getView(() -> {
                 sidebar.highlight("Owner Dashboard");
@@ -303,9 +303,9 @@ public class OwnerDashboard {
 
         VBox alertsContainer = new VBox(20);
         alertsContainer.getChildren().addAll(
-            createAlert("⚠", "#FEE2E2", "#B91C1C", "Urgent Approval Required", "Maintenance for Apt 203"),
-            createAlert("📅", "#DBEAFE", "#1E40AF", "Rent Payment Due Soon", "Apt 301 - Due Aug 05, 2025"),
-            createAlert("👤", "#FEF3C7", "#92400E", "New Tenant Application", "Review application for Apt 105")
+                createAlert("⚠", "#FEE2E2", "#B91C1C", "Urgent Approval Required", "Maintenance for Apt 203"),
+                createAlert("📅", "#DBEAFE", "#1E40AF", "Rent Payment Due Soon", "Apt 301 - Due Aug 05, 2025"),
+                createAlert("👤", "#FEF3C7", "#92400E", "New Tenant Application", "Review application for Apt 105")
         );
         maintenanceBox.getChildren().addAll(maintenanceTitle, maintenanceDesc, alertsContainer);
 
@@ -319,7 +319,7 @@ public class OwnerDashboard {
 
         return dashboardLayout;
     }
-    
+
     private HBox createAlert(String icon, String bgColor, String iconColor, String title, String subtitle) {
         StackPane iconPane = new StackPane();
         Circle iconBg = new Circle(18, Color.web(bgColor));
@@ -384,15 +384,28 @@ public class OwnerDashboard {
         detailsGrid.add(createDetailLabel("Address:"), 0, 2);
         detailsGrid.add(createDetailValue(flat.getAddress()), 1, 2);
         detailsGrid.add(createDetailLabel("Tenant Name:"), 0, 3);
-        detailsGrid.add(createDetailValue(flat.getTenantName()), 1, 3);
+        detailsGrid.add(createDetailValue(flat.getTenantName() != null ? flat.getTenantName() : "N/A"), 1, 3);
         detailsGrid.add(createDetailLabel("Tenant Email:"), 0, 4);
-        detailsGrid.add(createDetailValue(flat.getTenantEmail()), 1, 4);
+        detailsGrid.add(createDetailValue(flat.getTenantEmail() != null ? flat.getTenantEmail() : "N/A"), 1, 4);
         detailsGrid.add(createDetailLabel("Monthly Rent:"), 0, 5);
         detailsGrid.add(createDetailValue("₹" + flat.getRent()), 1, 5);
 
-        entryCard.getChildren().addAll(titleLabel, imageContainer, detailsGrid);
-        return entryCard;
-    }
+        // --- Add Update Button ---
+    Button updateBtn = new Button("Update");
+    updateBtn.setFont(Font.font("System", FontWeight.BOLD, 13));
+    updateBtn.setStyle("-fx-background-color: #4F46E5; -fx-text-fill: white; -fx-background-radius: 6;");
+    updateBtn.setCursor(Cursor.HAND);
+
+    // No action attached
+    // updateBtn.setOnAction(...); ← Removed
+
+    HBox buttonBox = new HBox(updateBtn);
+    buttonBox.setAlignment(Pos.CENTER_RIGHT);
+
+    entryCard.getChildren().addAll(titleLabel, imageContainer, detailsGrid, buttonBox);
+    return entryCard;
+
+}
 
     private Label createDetailLabel(String text) {
         Label label = new Label(text);
