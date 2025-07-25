@@ -1,10 +1,15 @@
 package com.smartrent.View.Tenant;
 
 import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.smartrent.Controller.dataservice;
 import com.smartrent.Model.Tenant.PaymentData;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -21,6 +26,20 @@ public class Payment {
     private TextField upiIdField;
     private TextField tenantNameField;
     private TextField tenantEmailField;
+    private Label statusLabel; // Made a member variable to be accessible in the load method
+
+    // NEW: Member variables to store the dataservice and tenant's email
+    private final dataservice dataService;
+    private final String tenantEmail;
+
+    /**
+     * MODIFIED: The constructor now accepts the logged-in tenant's email.
+     * @param tenantEmail The email address of the currently logged-in tenant.
+     */
+    public Payment(String tenantEmail) {
+        this.dataService = new dataservice();
+        this.tenantEmail = tenantEmail;
+    }
 
     public VBox getView(Runnable onBack) {
 
@@ -36,6 +55,20 @@ public class Payment {
         ComboBox<String> paymentMethod = new ComboBox<>();
         paymentMethod.getItems().addAll("Credit/Debit Card", "UPI", "Net Banking");
         paymentMethod.setValue("Credit/Debit Card");
+
+        // NEW: Initialize the common fields here, just once.
+        amountField = new TextField();
+        amountField.setPromptText("Add Rent Amount");
+
+        datePicker = new DatePicker();
+        datePicker.setPromptText("Date");
+        datePicker.setValue(LocalDate.now());
+
+        tenantNameField = new TextField();
+        tenantNameField.setPromptText("Enter Tenant Name");
+
+        tenantEmailField = new TextField();
+        tenantEmailField.setPromptText("Enter Tenant Email ID");
 
         dynamicFieldsContainer = new VBox(10);
         updatePaymentFields("Credit/Debit Card");
@@ -53,8 +86,8 @@ public class Payment {
         payButton.setPrefHeight(45);
         payButton.setMaxWidth(Double.MAX_VALUE);
         payButton.setStyle("-fx-background-color: #6A42E4; -fx-text-fill: white; -fx-font-size: 16px; -fx-background-radius: 10;");
-
-        Label statusLabel = new Label();
+        payButton.setCursor(Cursor.HAND);
+        statusLabel = new Label();
         statusLabel.setPadding(new Insets(8, 0, 0, 0));
 
         VBox rightBox = new VBox(15,
@@ -87,7 +120,7 @@ public class Payment {
         root.setStyle("-fx-background-color: white;");
         VBox.setVgrow(contentPane, Priority.ALWAYS);
 
-        // --- Logic for the "Pay Rent Now" button ---
+        // --- Logic for the "Pay Rent Now" button (Unchanged as requested) ---
         payButton.setOnAction(e -> {
             if (!paymentMethod.getValue().equals("UPI")) {
                 statusLabel.setText("This functionality is only for UPI payments.");
@@ -119,8 +152,6 @@ public class Payment {
 
                 dataservice ds = new dataservice();
                 
-                // MODIFIED: Create a unique document ID for each payment.
-                // This prevents overwriting the old data.
                 String documentId = tenantEmail + "_" + System.currentTimeMillis();
                 ds.addPayment("Payments", documentId, paymentData);
 
@@ -129,8 +160,7 @@ public class Payment {
 
                 amountField.clear();
                 upiIdField.clear();
-                tenantNameField.clear();
-                tenantEmailField.clear();
+                // Name and email are not cleared because they are auto-filled
                 datePicker.setValue(LocalDate.now());
 
             } catch (NumberFormatException nfe) {
@@ -143,27 +173,69 @@ public class Payment {
             }
         });
 
+        // NEW: Call the method to fetch and display tenant data
+        loadAndPopulateTenantData();
+
         return root;
     }
 
+    /**
+     * NEW: Fetches the logged-in tenant's data and populates the form fields.
+     */
+    private void loadAndPopulateTenantData() {
+        Task<DocumentSnapshot> loadDataTask = new Task<>() {
+            @Override
+            protected DocumentSnapshot call() throws Exception {
+                // Use the getSignupData method to fetch the tenant's profile from the "users" collection
+                return dataService.getSignupData("users", tenantEmail);
+            }
+        };
+
+        loadDataTask.setOnSucceeded(e -> {
+            DocumentSnapshot doc = loadDataTask.getValue();
+            if (doc != null && doc.exists()) {
+                Platform.runLater(() -> {
+                    // The field name "firstName" must match your Firestore database exactly
+                    String firstName = doc.getString("firstName");
+                    tenantNameField.setText(firstName);
+                    tenantEmailField.setText(tenantEmail);
+
+                    // Make the fields non-editable as they are pre-filled
+                    tenantNameField.setEditable(false);
+                    tenantEmailField.setEditable(false);
+                });
+            } else {
+                Platform.runLater(() -> {
+                    tenantNameField.setText("Could not find name");
+                    tenantEmailField.setText(tenantEmail);
+                    tenantEmailField.setEditable(false);
+                });
+            }
+        });
+
+        loadDataTask.setOnFailed(e -> {
+            loadDataTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                statusLabel.setText("Error loading tenant data.");
+                statusLabel.setTextFill(Color.RED);
+            });
+        });
+
+        new Thread(loadDataTask).start();
+    }
+
+    /**
+     * MODIFIED: This method no longer re-creates the common fields.
+     * It clears the container and adds back the existing common fields,
+     * ensuring that the auto-filled data is preserved.
+     */
     private void updatePaymentFields(String method) {
         dynamicFieldsContainer.getChildren().clear();
 
-        amountField = new TextField();
-        amountField.setPromptText("Add Rent Amount");
-
-        datePicker = new DatePicker();
-        datePicker.setPromptText("Date");
-        datePicker.setValue(LocalDate.now());
-
-        tenantNameField = new TextField();
-        tenantNameField.setPromptText("Enter Tenant Name");
-
-        tenantEmailField = new TextField();
-        tenantEmailField.setPromptText("Enter Tenant Email ID");
-
+        // Add the existing common fields back to the container
         dynamicFieldsContainer.getChildren().addAll(tenantNameField, tenantEmailField, amountField, datePicker);
 
+        // Add specific fields based on the selected method
         switch (method) {
             case "Credit/Debit Card":
                 TextField cardNumber = new TextField();

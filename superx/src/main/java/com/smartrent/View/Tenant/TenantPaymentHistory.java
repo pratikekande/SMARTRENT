@@ -6,6 +6,7 @@ import com.smartrent.Model.Tenant.PaymentData;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -152,6 +153,7 @@ public class TenantPaymentHistory {
         Button downloadBtn = new Button("Download");
         downloadBtn.setFont(Font.font("Arial", FontWeight.SEMI_BOLD, 12));
         downloadBtn.setStyle("-fx-background-color: #636ae8; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 14;");
+        downloadBtn.setCursor(Cursor.HAND);;
         downloadBtn.setOnMouseEntered(e -> downloadBtn.setStyle(downloadBtn.getStyle() + "-fx-cursor: hand; -fx-opacity: 0.9;"));
         downloadBtn.setOnMouseExited(e -> downloadBtn.setStyle(downloadBtn.getStyle().replace("-fx-cursor: hand; -fx-opacity: 0.9;", "")));
         downloadBtn.setOnAction(e -> System.out.println("Download clicked for: " + date));

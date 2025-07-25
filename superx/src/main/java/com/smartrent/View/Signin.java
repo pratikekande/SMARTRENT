@@ -20,6 +20,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
@@ -56,10 +57,10 @@ public class Signin {
     public HBox createSigninPage(Runnable back) {
         // --- Left Panel ---
         Label greetTitle = new Label("Great to have you\nback!");
-        greetTitle.setFont(Font.font("Arial", 34));
+        greetTitle.setFont(Font.font("Arial", FontWeight.BOLD,40));
         greetTitle.setStyle("-fx-text-fill: #6B7280; -fx-font-weight: bold;");
         Label greetSub = new Label("SmartRent – Where Tenants and Owners\nMeet Simplicity.\nA smarter way to manage rentals, together.");
-        greetSub.setFont(Font.font("Arial", 14));
+        greetSub.setFont(Font.font("Arial", FontWeight.BOLD,15));
         greetSub.setStyle("-fx-text-fill: black;");
         VBox leftPane = new VBox(10, greetTitle, greetSub);
         leftPane.setPadding(new Insets(40, 40, 40, 170));
@@ -88,7 +89,7 @@ public class Signin {
 
         Text welText = new Text("SmartRent+");
         welText.setStyle("-fx-font-weight: bold;");
-        welText.setFont(Font.font("Arial", 24));
+        welText.setFont(Font.font("Arial", FontWeight.BOLD,24));
 
         Text user = new Text("Email");
         user.setFont(Font.font("Arial", 13));
@@ -106,7 +107,7 @@ public class Signin {
         passwordField.setStyle("-fx-background-color: #F3F4F6; -fx-border-color: #ccc; -fx-border-radius: 5px; -fx-padding: 10;");
 
         Hyperlink forgotPassword = new Hyperlink("Forgot Password?");
-        forgotPassword.setStyle("-fx-text-fill: #000000ff; -fx-font-size: 12px;");
+        forgotPassword.setStyle("-fx-text-fill: #000000ff; -fx-font-size: 13px;");
         forgotPassword.setBorder(Border.EMPTY);
         forgotPassword.setPadding(new Insets(0));
         HBox forgotPassBox = new HBox(forgotPassword);
@@ -114,6 +115,7 @@ public class Signin {
         VBox passVBox = new VBox(2, pass, passwordField, forgotPassBox);
 
         CheckBox rememberMe = new CheckBox("Remember me");
+        rememberMe.setFont(Font.font("Arial",FontWeight.BOLD,12));;
         HBox rememberRow = new HBox(rememberMe);
         rememberRow.setAlignment(Pos.CENTER_LEFT);
         rememberRow.setPadding(new Insets(5, 0, 0, 0));

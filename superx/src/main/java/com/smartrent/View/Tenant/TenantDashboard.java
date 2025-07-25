@@ -89,6 +89,7 @@ public class TenantDashboard {
         HBox.setHgrow(payRentCard, Priority.ALWAYS);
         HBox.setHgrow(maintenanceCard, Priority.ALWAYS);
         HBox.setHgrow(upcomingRentCard, Priority.ALWAYS);
+        cardRow.setCursor(Cursor.HAND);
         cardRow.setAlignment(Pos.CENTER);
 
         VBox notifBox = createNotificationsBox();
@@ -193,7 +194,7 @@ public class TenantDashboard {
 
         payRentCard.setOnMouseClicked((MouseEvent e) -> {
             sidebar.highlight("");
-            Payment paymentPage = new Payment();
+            Payment paymentPage = new Payment(this.tenantId);
             VBox view = paymentPage.getView(() -> {
                 sidebar.highlight("Tenant Dashboard");
                 contentWrapper.setCenter(dashboardContent);
@@ -203,7 +204,7 @@ public class TenantDashboard {
 
         maintenanceCard.setOnMouseClicked((MouseEvent e) -> {
             sidebar.highlight("");
-            RaiseMaintanance raisePage = new RaiseMaintanance();
+            RaiseMaintanance raisePage = new RaiseMaintanance(this.tenantId);
             VBox view = raisePage.getView(() -> {
                 sidebar.highlight("Tenant Dashboard");
                 contentWrapper.setCenter(dashboardContent);
@@ -371,6 +372,7 @@ public class TenantDashboard {
         col1.setPrefWidth(120);
         detailsGrid.getColumnConstraints().addAll(col1);
 
+
         // Initialize member variables for the value labels
         societyNameValueLabel = createDetailValue("Loading...");
         flatNoValueLabel = createDetailValue("Loading...");
@@ -400,7 +402,7 @@ public class TenantDashboard {
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         
         propertyBox.getChildren().add(scrollPane);
-        
+     
         return propertyBox;
     }
 

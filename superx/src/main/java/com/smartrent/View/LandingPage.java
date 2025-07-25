@@ -4,6 +4,7 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.RotateTransition;
+import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -55,12 +56,10 @@ public class LandingPage extends Application {
         DropShadow cardShadow = new DropShadow(20, Color.rgb(0, 0, 0, 0.2));
         DropShadow heroImageShadow = new DropShadow(30, Color.rgb(0, 0, 0, 0.4));
 
-
         // --- UI Construction ---
         VBox mainLayout = new VBox();
         mainLayout.setStyle(MAIN_GRADIENT);
         mainLayout.setAlignment(Pos.TOP_CENTER);
-
 
         VBox contentWrapper = new VBox(80); // Increased spacing between sections
         contentWrapper.setAlignment(Pos.TOP_CENTER);
@@ -77,7 +76,6 @@ public class LandingPage extends Application {
         navContent.setAlignment(Pos.CENTER);
         navContent.setMaxWidth(1400);
         HBox.setHgrow(navContent, Priority.ALWAYS);
-
 
         ImageView logimage = new ImageView("Assets//Images//logo.png");
         logimage.setFitWidth(100);
@@ -126,17 +124,38 @@ public class LandingPage extends Application {
         // ScrollPane must be defined here to be used in the click handler
         ScrollPane scrollPane = new ScrollPane();
 
-
         // --- Navigation Links with Scroll Functionality ---
+        // Inside your layout logic
         String[] navTexts = { "About Us", "Features", "How it Works", "Testimonials", "Contact" };
+
         for (String text : navTexts) {
             Label nav = new Label(text);
             nav.setFont(Font.font(FONT_FAMILY, FontWeight.MEDIUM, 18));
             nav.setTextFill(SECONDARY_TEXT_COLOR);
             nav.setCursor(Cursor.HAND);
-            nav.setOnMouseEntered(e -> nav.setTextFill(PRIMARY_TEXT_COLOR));
-            nav.setOnMouseExited(e -> nav.setTextFill(SECONDARY_TEXT_COLOR));
 
+            // Hover animation setup
+            ScaleTransition scaleIn = new ScaleTransition(Duration.millis(200), nav);
+            scaleIn.setToX(1.1);
+            scaleIn.setToY(1.1);
+
+            ScaleTransition scaleOut = new ScaleTransition(Duration.millis(200), nav);
+            scaleOut.setToX(1.0);
+            scaleOut.setToY(1.0);
+
+            nav.setOnMouseEntered(e -> {
+                nav.setTextFill(PRIMARY_TEXT_COLOR);
+                nav.setUnderline(true);
+                scaleIn.playFromStart();
+            });
+
+            nav.setOnMouseExited(e -> {
+                nav.setTextFill(SECONDARY_TEXT_COLOR);
+                nav.setUnderline(false);
+                scaleOut.playFromStart();
+            });
+
+            // Click behavior
             if (text.equals("About Us")) {
                 nav.setOnMouseClicked(event -> {
                     if (aboutUsScene == null) {
@@ -145,27 +164,40 @@ public class LandingPage extends Application {
                     landingStage.setScene(aboutUsScene);
                 });
             } else {
-                // Determine the target node for scrolling
                 Node targetNode;
                 switch (text) {
-                    case "Features":     targetNode = featuresSection; break;
-                    case "How it Works": targetNode = howItWorks; break;
-                    case "Testimonials": targetNode = testimonials; break;
-                    case "Contact":      targetNode = footerWrapper; break;
-                    default:             targetNode = null; break;
+                    case "Features":
+                        targetNode = featuresSection;
+                        break;
+                    case "How it Works":
+                        targetNode = howItWorks;
+                        break;
+                    case "Testimonials":
+                        targetNode = testimonials;
+                        break;
+                    case "Contact":
+                        targetNode = footerWrapper;
+                        break;
+                    default:
+                        targetNode = null;
+                        break;
                 }
-                // Add the click handler to scroll to the target node
+
                 if (targetNode != null) {
                     nav.setOnMouseClicked(event -> {
                         scrollToNode(scrollPane, mainLayout, targetNode);
                     });
                 }
             }
+
             navItems.getChildren().add(nav);
         }
-
-        String signInBtnStyle = String.format("-fx-background-color: %s; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 25; -fx-background-radius: 25;", ACCENT_COLOR_PRIMARY.toString().replace("0x", "#"));
-        String signInBtnHoverStyle = String.format("-fx-background-color: %s; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 25; -fx-background-radius: 25;", ACCENT_COLOR_SECONDARY.toString().replace("0x", "#"));
+        String signInBtnStyle = String.format(
+                "-fx-background-color: %s; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 25; -fx-background-radius: 25;",
+                ACCENT_COLOR_PRIMARY.toString().replace("0x", "#"));
+        String signInBtnHoverStyle = String.format(
+                "-fx-background-color: %s; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 25; -fx-background-radius: 25;",
+                ACCENT_COLOR_SECONDARY.toString().replace("0x", "#"));
 
         signInBtn.setStyle(signInBtnStyle);
         signInBtn.setCursor(Cursor.HAND);
@@ -197,7 +229,8 @@ public class LandingPage extends Application {
         heroTitle.setTextFill(PRIMARY_TEXT_COLOR);
         heroTitle.setWrapText(true);
 
-        Label heroSubtitle = new Label("Revolutionize your property management experience with SmartRent+. The all-in-one solution for modern landlords and tenants.");
+        Label heroSubtitle = new Label(
+                "Revolutionize your property management experience with SmartRent+. The all-in-one solution for modern landlords and tenants.");
         heroSubtitle.setFont(Font.font(FONT_FAMILY, FontWeight.NORMAL, 22));
         heroSubtitle.setTextFill(SECONDARY_TEXT_COLOR);
         heroSubtitle.setWrapText(true);
@@ -205,10 +238,13 @@ public class LandingPage extends Application {
 
         Button watchDemo = new Button("Watch Demo");
         watchDemo.setFont(Font.font(FONT_FAMILY, FontWeight.BOLD, 18));
-        watchDemo.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-border-color: white; -fx-border-width: 2; -fx-padding: 15 35; -fx-border-radius: 30;");
+        watchDemo.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: white; -fx-border-color: white; -fx-border-width: 2; -fx-padding: 15 35; -fx-border-radius: 30;");
         watchDemo.setCursor(Cursor.HAND);
-        watchDemo.setOnMouseEntered(e -> watchDemo.setStyle("-fx-background-color: white; -fx-text-fill: black; -fx-border-color: white; -fx-border-width: 2; -fx-padding: 15 35; -fx-border-radius: 30;"));
-        watchDemo.setOnMouseExited(e -> watchDemo.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-border-color: white; -fx-border-width: 2; -fx-padding: 15 35; -fx-border-radius: 30;"));
+        watchDemo.setOnMouseEntered(e -> watchDemo.setStyle(
+                "-fx-background-color: white; -fx-text-fill: black; -fx-border-color: white; -fx-border-width: 2; -fx-padding: 15 35; -fx-border-radius: 30;"));
+        watchDemo.setOnMouseExited(e -> watchDemo.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: white; -fx-border-color: white; -fx-border-width: 2; -fx-padding: 15 35; -fx-border-radius: 30;"));
 
         heroText.getChildren().addAll(heroTitle, heroSubtitle, watchDemo);
 
@@ -286,8 +322,10 @@ public class LandingPage extends Application {
             stepLabel.setTextFill(PRIMARY_TEXT_COLOR);
 
             Label stepDesc = new Label("Quickly create your account to get started.");
-            if(step.contains("Configure")) stepDesc.setText("Add your properties and tenant details.");
-            if(step.contains("Manage")) stepDesc.setText("Enjoy streamlined property management.");
+            if (step.contains("Configure"))
+                stepDesc.setText("Add your properties and tenant details.");
+            if (step.contains("Manage"))
+                stepDesc.setText("Enjoy streamlined property management.");
             stepDesc.setFont(Font.font(FONT_FAMILY, 16));
             stepDesc.setTextFill(SECONDARY_TEXT_COLOR);
 
@@ -305,9 +343,12 @@ public class LandingPage extends Application {
         testiCards.setAlignment(Pos.CENTER);
 
         String[][] testiTexts = {
-                { "Sashi Sir", "\"SmartRent+ made managing my properties a breeze! The dashboard is intuitive and saves me hours every week.\"" },
-                { "Sachin Sir", "\"My tenants love the instant notifications for rent reminders and announcements. It has improved communication tenfold.\"" },
-                { "Pramod Sir", "\"I track all my rent collections in one place now. No more messy spreadsheets. It's truly a game-changer for landlords.\"" }
+                { "Sashi Sir",
+                        "\"SmartRent+ made managing my properties a breeze! The dashboard is intuitive and saves me hours every week.\"" },
+                { "Sachin Sir",
+                        "\"My tenants love the instant notifications for rent reminders and announcements. It has improved communication tenfold.\"" },
+                { "Pramod Sir",
+                        "\"I track all my rent collections in one place now. No more messy spreadsheets. It's truly a game-changer for landlords.\"" }
         };
 
         for (String[] entry : testiTexts) {
@@ -325,7 +366,7 @@ public class LandingPage extends Application {
             ImageView avatar = new ImageView(new Image("Assets/Images/image1.jpeg"));
             avatar.setFitWidth(60);
             avatar.setFitHeight(60);
-            avatar.setClip(new Circle(30,30,30));
+            avatar.setClip(new Circle(30, 30, 30));
 
             Label name = new Label(entry[0]);
             name.setFont(Font.font(FONT_FAMILY, FontWeight.BOLD, 18));
@@ -348,7 +389,8 @@ public class LandingPage extends Application {
         VBox ctaSection = new VBox(30);
         ctaSection.setPadding(new Insets(80));
         ctaSection.setAlignment(Pos.CENTER);
-        ctaSection.setStyle(String.format("-fx-background-color: %s; -fx-background-radius: 20;", ACCENT_COLOR_PRIMARY.toString().replace("0x", "#")));
+        ctaSection.setStyle(String.format("-fx-background-color: %s; -fx-background-radius: 20;",
+                ACCENT_COLOR_PRIMARY.toString().replace("0x", "#")));
         ctaSection.setEffect(cardShadow);
 
         Label ctaLabel = new Label("Ready to Get Started?");
@@ -357,10 +399,13 @@ public class LandingPage extends Application {
 
         Button ctaButton = new Button("Create Your Free Account");
         ctaButton.setFont(Font.font(FONT_FAMILY, FontWeight.BOLD, 18));
-        ctaButton.setStyle("-fx-background-color: white; -fx-text-fill: #333; -fx-padding: 20 40; -fx-background-radius: 30;");
+        ctaButton.setStyle(
+                "-fx-background-color: white; -fx-text-fill: #333; -fx-padding: 20 40; -fx-background-radius: 30;");
         ctaButton.setCursor(Cursor.HAND);
-        ctaButton.setOnMouseEntered(e -> ctaButton.setStyle("-fx-background-color: #f0f0f0; -fx-text-fill: #333; -fx-padding: 20 40; -fx-background-radius: 30;"));
-        ctaButton.setOnMouseExited(e -> ctaButton.setStyle("-fx-background-color: white; -fx-text-fill: #333; -fx-padding: 20 40; -fx-background-radius: 30;"));
+        ctaButton.setOnMouseEntered(e -> ctaButton.setStyle(
+                "-fx-background-color: #f0f0f0; -fx-text-fill: #333; -fx-padding: 20 40; -fx-background-radius: 30;"));
+        ctaButton.setOnMouseExited(e -> ctaButton.setStyle(
+                "-fx-background-color: white; -fx-text-fill: #333; -fx-padding: 20 40; -fx-background-radius: 30;"));
 
         ctaSection.getChildren().addAll(ctaLabel, ctaButton);
 
@@ -376,13 +421,15 @@ public class LandingPage extends Application {
         leftLogo.setFont(Font.font(FONT_FAMILY, FontWeight.BOLD, 24));
         leftLogo.setTextFill(PRIMARY_TEXT_COLOR);
 
-        Label leftDesc = new Label("Smart property management for the modern world. Connecting property owners and tenants through intelligent technology.");
+        Label leftDesc = new Label(
+                "Smart property management for the modern world. Connecting property owners and tenants through intelligent technology.");
         leftDesc.setWrapText(true);
         leftDesc.setFont(Font.font(FONT_FAMILY, 16));
         leftDesc.setTextFill(SECONDARY_TEXT_COLOR);
 
         // Create email contact info
-        ImageView mailIcon = new ImageView(new Image("https://cdn-icons-png.flaticon.com/512/732/732200.png", 18, 18, true, true));
+        ImageView mailIcon = new ImageView(
+                new Image("https://cdn-icons-png.flaticon.com/512/732/732200.png", 18, 18, true, true));
         Label emailLabel = new Label("smartrent2025@gmail.com");
         emailLabel.setFont(Font.font(FONT_FAMILY, 16));
         emailLabel.setTextFill(SECONDARY_TEXT_COLOR);
@@ -390,11 +437,13 @@ public class LandingPage extends Application {
         emailBox.setAlignment(Pos.CENTER_LEFT);
         emailBox.getChildren().addAll(mailIcon, emailLabel);
 
-
         HBox socialIcons = new HBox(20);
-        ImageView fb = new ImageView(new Image("https://cdn-icons-png.flaticon.com/512/733/733547.png", 24, 24, true, true));
-        ImageView tw = new ImageView(new Image("https://cdn-icons-png.flaticon.com/512/733/733579.png", 24, 24, true, true));
-        ImageView ig = new ImageView(new Image("https://cdn-icons-png.flaticon.com/512/733/733558.png", 24, 24, true, true));
+        ImageView fb = new ImageView(
+                new Image("https://cdn-icons-png.flaticon.com/512/733/733547.png", 24, 24, true, true));
+        ImageView tw = new ImageView(
+                new Image("https://cdn-icons-png.flaticon.com/512/733/733579.png", 24, 24, true, true));
+        ImageView ig = new ImageView(
+                new Image("https://cdn-icons-png.flaticon.com/512/733/733558.png", 24, 24, true, true));
         socialIcons.getChildren().addAll(fb, tw, ig);
         socialIcons.getChildren().forEach(node -> {
             node.setCursor(Cursor.HAND);
@@ -458,20 +507,21 @@ public class LandingPage extends Application {
 
         landingStage.setScene(landingScene);
         landingStage.setTitle("SmartRent+ | Smart Property Management");
-        
+
         // --- FIX ---
         // This is the crucial change. By setting resizable to false, the Stage's
         // size is locked and will not change when you switch scenes.
         landingStage.setResizable(false);
-        
+
         landingStage.show();
     }
 
     /**
      * Helper method to smoothly scroll to a specific node within a ScrollPane.
-     * @param scrollPane The ScrollPane to scroll.
+     * 
+     * @param scrollPane  The ScrollPane to scroll.
      * @param contentPane The root content pane inside the ScrollPane.
-     * @param targetNode The node to scroll to.
+     * @param targetNode  The node to scroll to.
      */
     private void scrollToNode(ScrollPane scrollPane, Pane contentPane, Node targetNode) {
         Platform.runLater(() -> {
@@ -480,7 +530,8 @@ public class LandingPage extends Application {
             Bounds scrollPaneBounds = scrollPane.localToScene(scrollPane.getBoundsInLocal());
 
             double targetYinScrollPane = targetBounds.getMinY() - scrollPaneBounds.getMinY();
-            double vValue = targetYinScrollPane / (contentBounds.getHeight() - scrollPane.getViewportBounds().getHeight());
+            double vValue = targetYinScrollPane
+                    / (contentBounds.getHeight() - scrollPane.getViewportBounds().getHeight());
 
             // Clamp vValue to be between 0 and 1
             vValue = Math.max(0, Math.min(1, vValue));
@@ -513,7 +564,6 @@ public class LandingPage extends Application {
         Parent aboutUsRoot = aboutUsPage.createAboutUsPage(this::handleBackToLanding);
         aboutUsScene = new Scene(aboutUsRoot, 1280, 720);
     }
-
 
     /**
      * Handles the action to return to the main landing page.

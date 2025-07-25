@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -133,13 +134,14 @@ public class FlatDetails {
         backBtn.setPrefWidth(180);
         backBtn.setPrefHeight(45);
         backBtn.setStyle("-fx-background-color: #d1d5db; -fx-text-fill: #1f2937; -fx-font-weight: bold; -fx-background-radius: 15px;");
+        backBtn.setCursor(Cursor.HAND);
         backBtn.setOnAction(e -> onBack.run());
 
         submitBtn = new Button("Submit");
         submitBtn.setPrefWidth(180);
         submitBtn.setPrefHeight(45);
         submitBtn.setStyle("-fx-background-color: #4f46e5; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 15px;");
-        
+        submitBtn.setCursor(Cursor.HAND);
         statusLabel = new Label();
         statusLabel.setPadding(new Insets(8, 0, 0, 0));
 

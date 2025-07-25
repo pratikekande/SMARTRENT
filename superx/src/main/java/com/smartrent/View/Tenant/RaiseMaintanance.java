@@ -1,6 +1,7 @@
 package com.smartrent.View.Tenant;
 
 import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.firebase.cloud.StorageClient;
@@ -9,6 +10,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -33,6 +35,7 @@ public class RaiseMaintanance {
 
     // --- Member Variables ---
     private final dataservice dataService;
+    private final String tenantEmail; // NEW: To store the logged-in tenant's email
     private File selectedFile;
     private String uploadedFileUrl; // Stores the URL after immediate upload
     private TextField titleField;
@@ -45,10 +48,12 @@ public class RaiseMaintanance {
     private Button uploadBtn; // To disable during upload
 
     /**
-     * Constructor to initialize the data service.
+     * MODIFIED: The constructor now accepts the logged-in tenant's email.
+     * @param tenantEmail The email address of the currently logged-in tenant.
      */
-    public RaiseMaintanance() {
+    public RaiseMaintanance(String tenantEmail) {
         this.dataService = new dataservice();
+        this.tenantEmail = tenantEmail; // Store the email
     }
 
     /**
@@ -70,9 +75,9 @@ public class RaiseMaintanance {
 
         // --- Form Fields ---
         tenantNameField = new TextField();
-        tenantNameField.setPromptText("Enter Your Name");
+        tenantNameField.setPromptText("Loading name..."); // Will be auto-filled
         tenantEmailField = new TextField();
-        tenantEmailField.setPromptText("Enter Your Email ID");
+        tenantEmailField.setPromptText("Loading email..."); // Will be auto-filled
         titleField = new TextField();
         titleField.setPromptText("Enter a brief title (e.g., Leaky Faucet)");
         descriptionArea = new TextArea();
@@ -115,14 +120,16 @@ public class RaiseMaintanance {
         Button backBtn = new Button("← Back");
         backBtn.setPrefWidth(140);
         backBtn.setPrefHeight(36);
+        
         backBtn.setStyle("-fx-background-color: #d1d5db; -fx-text-fill: #1f2937; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-cursor: hand; -fx-font-size: 14px;");
+        backBtn.setCursor(Cursor.HAND);
         backBtn.setOnAction(e -> onBack.run());
 
         submitBtn = new Button("Submit");
         submitBtn.setPrefWidth(140);
         submitBtn.setPrefHeight(36);
         submitBtn.setStyle("-fx-background-color: #4f46e5; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-cursor: hand;");
-
+        submitBtn.setCursor(Cursor.HAND);
         HBox buttonBox = new HBox(15, backBtn, submitBtn);
         buttonBox.setAlignment(Pos.CENTER);
         buttonBox.setPadding(new Insets(15, 0, 0, 0));
@@ -142,14 +149,11 @@ public class RaiseMaintanance {
         ScrollPane scrollPane = new ScrollPane(innerContent);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        // Make the ScrollPane and its viewport transparent to let the parent's background show through.
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
 
         VBox contentBox = new VBox(scrollPane);
         contentBox.setAlignment(Pos.CENTER);
         contentBox.setMaxWidth(450);
-        // The style is now applied to the VBox container, which will correctly clip the ScrollPane inside it.
-        // REMOVED the border-radius properties to test layout with sharp corners.
         contentBox.setStyle(
                 "-fx-background-color: white;" +
                 "-fx-border-color: #6366F1;" +
@@ -159,12 +163,61 @@ public class RaiseMaintanance {
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #F3F4F6;");
         root.setPadding(new Insets(15));
+        
+        // NEW: Call the method to fetch and display tenant data
+        loadAndPopulateTenantData();
 
         return root;
     }
 
     /**
+     * NEW: Fetches the logged-in tenant's data and populates the form fields.
+     */
+    private void loadAndPopulateTenantData() {
+        Task<DocumentSnapshot> loadDataTask = new Task<>() {
+            @Override
+            protected DocumentSnapshot call() throws Exception {
+                // This now correctly looks in the "users" collection
+                return dataService.getSignupData("users", tenantEmail);
+            }
+        };
+
+        loadDataTask.setOnSucceeded(e -> {
+            DocumentSnapshot doc = loadDataTask.getValue();
+            if (doc != null && doc.exists()) {
+                Platform.runLater(() -> {
+                    // CORRECTED: The field name now matches your database ("firstName")
+                    String firstName = doc.getString("firstName");
+                    tenantNameField.setText(firstName);
+                    tenantEmailField.setText(tenantEmail);
+
+                    // Make the fields non-editable as they are pre-filled
+                    tenantNameField.setEditable(false);
+                    tenantEmailField.setEditable(false);
+                });
+            } else {
+                Platform.runLater(() -> {
+                    tenantNameField.setText("Could not find name");
+                    tenantEmailField.setText(tenantEmail);
+                    tenantEmailField.setEditable(false);
+                });
+            }
+        });
+
+        loadDataTask.setOnFailed(e -> {
+            loadDataTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                statusLabel.setText("Error loading tenant data.");
+                statusLabel.setTextFill(Color.RED);
+            });
+        });
+
+        new Thread(loadDataTask).start();
+    }
+
+    /**
      * Opens FileChooser and triggers the upload task.
+     * (This method is unchanged as per your request).
      */
     private void handleFileUpload() {
         FileChooser fileChooser = new FileChooser();
@@ -173,7 +226,6 @@ public class RaiseMaintanance {
         this.selectedFile = fileChooser.showOpenDialog(uploadBtn.getScene().getWindow());
 
         if (this.selectedFile != null) {
-            // Background task for file upload
             Task<String> uploadTask = new Task<>() {
                 @Override
                 protected String call() throws Exception {
@@ -220,6 +272,7 @@ public class RaiseMaintanance {
 
     /**
      * Handles the form submission logic.
+     * (This method is unchanged as per your request).
      */
     private void handleSubmit() {
         String tenantName = tenantNameField.getText();
@@ -233,7 +286,6 @@ public class RaiseMaintanance {
             return;
         }
 
-        // Background task for Firestore save
         Task<Void> saveTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
@@ -267,6 +319,7 @@ public class RaiseMaintanance {
 
     /**
      * Creates a Map for the request and saves it to Firestore.
+     * (This method is unchanged as per your request).
      */
     private void saveMaintenanceRequest(String tenantName, String tenantEmail, String title, String description, String imageUrl) throws Exception {
         Map<String, Object> requestData = new HashMap<>();
@@ -274,7 +327,7 @@ public class RaiseMaintanance {
         requestData.put("tenantEmail", tenantEmail);
         requestData.put("title", title);
         requestData.put("description", description);
-        requestData.put("imageUrl", imageUrl); // Uses the pre-uploaded URL
+        requestData.put("imageUrl", imageUrl);
         requestData.put("status", "Pending");
         requestData.put("submittedAt", Timestamp.now());
 
@@ -287,12 +340,11 @@ public class RaiseMaintanance {
      * Clears all form fields and resets status labels.
      */
     private void clearForm() {
-        tenantNameField.clear();
-        tenantEmailField.clear();
+        // Name and Email are not cleared as they are auto-filled
         titleField.clear();
         descriptionArea.clear();
         this.selectedFile = null;
-        this.uploadedFileUrl = null; // Reset the URL
+        this.uploadedFileUrl = null;
         fileStatusLabel.setText("No file chosen");
         fileStatusLabel.setStyle("-fx-text-fill: #6b7280;");
     }

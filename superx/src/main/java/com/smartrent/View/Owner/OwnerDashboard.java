@@ -297,6 +297,7 @@ public class OwnerDashboard {
         Label addFlatLabel = new Label("Add New Flat");
         addFlatLabel.setFont(Font.font("System", FontWeight.BOLD, 18));
         addFlatLabel.setTextFill(Color.WHITE);
+        addFlatCard.setCursor(Cursor.HAND);
 
 
         addFlatCard.getChildren().addAll(plusSign, addFlatLabel);

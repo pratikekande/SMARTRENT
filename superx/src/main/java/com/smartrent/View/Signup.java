@@ -19,6 +19,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
@@ -107,7 +108,7 @@ public class Signup {
                 "-fx-background-color: #F3F4F6; -fx-border-color: #ccc; -fx-border-radius: 5px; -fx-padding: 10;");
         VBox emailBox = new VBox(2, email, emailField);
 
-        Text pass = new Text("PassWord");
+        Text pass = new Text("Password");
         pass.setFont(Font.font("Arial", 13));
         passwordField = new PasswordField();
         passwordField.setFocusTraversable(false);
@@ -175,11 +176,14 @@ public class Signup {
 
         // --- Right Panel ---
         Label greet = new Label("Come join us");
-        greet.setFont(Font.font("Arial", 34));
+        greet.setFont(Font.font("Arial", FontWeight.BOLD,40));
         greet.setStyle("-fx-text-fill: #1c1d1dff; -fx-font-weight: bold;");
         Text text1 = new Text("🔢 Manage properties, track rent, and stay organized—made simple.");
+        text1.setFont(Font.font("Arial",FontWeight.BOLD,18));
         Text text2 = new Text("⏱ Smart tips to manage rentals and stay on top of rent.");
+         text2.setFont(Font.font("Arial",FontWeight.BOLD,18));
         Text text3 = new Text("🌐 Helping tenants and owners stay in sync");
+         text3.setFont(Font.font("Arial",FontWeight.BOLD,18));
         VBox textList = new VBox(25, text1, text2, text3);
         VBox rightPanel = new VBox(30, greet, textList);
         rightPanel.setAlignment(Pos.TOP_LEFT);

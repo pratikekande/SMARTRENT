@@ -6,6 +6,7 @@ import com.smartrent.Model.Tenant.MaintenanceRequest;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
@@ -149,7 +150,7 @@ public class TenantMaintananceHistory {
         VBox card = new VBox(5, topRow, dateLabel);
         card.setPadding(new Insets(10));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0, 0, 2);");
-
+        card.setCursor(Cursor.HAND);
         return card;
     }
 }

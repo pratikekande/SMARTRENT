@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -109,7 +110,7 @@ public class TenantManagement {
         VBox card = new VBox(15);
         card.setPadding(new Insets(20));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #e5e7eb; -fx-border-radius: 10;");
-
+        card.setCursor(Cursor.HAND);
         Text tenantName = new Text(flat.getTenantName());
         tenantName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
 
@@ -131,6 +132,7 @@ public class TenantManagement {
         // --- ✅ MODIFIED: Delete Button with Logic ---
         Button deleteButton = new Button("Delete Tenant");
         deleteButton.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;");
+        deleteButton.setCursor(Cursor.HAND);
         // Attach the action handler which calls our new method
         deleteButton.setOnAction(e -> handleDeleteTenant(flat, card));
 
@@ -201,9 +203,11 @@ public class TenantManagement {
         }
         Button downloadDoc = new Button("⬇ Download Selected");
         downloadDoc.setMaxWidth(Double.MAX_VALUE);
+        downloadDoc.setCursor(Cursor.HAND);
         VBox docsSection = new VBox(20, docTitle, docList, downloadDoc);
         docsSection.setPadding(new Insets(25));
         docsSection.setStyle("-fx-background-color: white; -fx-background-radius: 15; -fx-border-color: #d1d5db; -fx-border-radius: 15;");
+
         docsSection.setPrefWidth(360);
         VBox rightColumn = new VBox(docsSection);
         rightColumn.setAlignment(Pos.CENTER);
