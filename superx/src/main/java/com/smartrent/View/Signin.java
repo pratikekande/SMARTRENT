@@ -1,7 +1,7 @@
 package com.smartrent.View;
 
 import com.google.cloud.firestore.DocumentSnapshot;
-import com.smartrent.Controller.*;
+//import com.smartrent.Controller.*;
 import com.smartrent.Controller.FireBaseAuth;
 import com.smartrent.Controller.dataservice;
 import com.smartrent.View.Owner.OwnerDashboard;

@@ -1,6 +1,6 @@
 package com.smartrent.View.Tenant;
 
-import com.google.cloud.firestore.DocumentSnapshot;
+//import com.google.cloud.firestore.DocumentSnapshot;
 import com.smartrent.Controller.dataservice;
 import com.smartrent.Model.Tenant.TenantProfileModel;
 import javafx.application.Platform;

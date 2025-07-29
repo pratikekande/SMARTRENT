@@ -506,7 +506,8 @@ public class LandingPage extends Application {
         landingScene = new Scene(scrollPane, 1280, 720);
 
         landingStage.setScene(landingScene);
-        landingStage.setTitle("SmartRent+ | Smart Property Management");
+        landingStage.setTitle("SmartRent+ ");
+        landingStage.getIcons().add(new Image("Assets/Images/logo.png"));
 
         // --- FIX ---
         // This is the crucial change. By setting resizable to false, the Stage's
@@ -518,8 +519,7 @@ public class LandingPage extends Application {
 
     /**
      * Helper method to smoothly scroll to a specific node within a ScrollPane.
-     * 
-     * @param scrollPane  The ScrollPane to scroll.
+     * * @param scrollPane  The ScrollPane to scroll.
      * @param contentPane The root content pane inside the ScrollPane.
      * @param targetNode  The node to scroll to.
      */

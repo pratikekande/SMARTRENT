@@ -74,9 +74,6 @@ public class AIChatPage {
             if (!messageText.isEmpty()) {
                 addMessage(messageText, true); // Add user's message bubble
                 messageInput.clear();
-                // TODO: Add your Gemini AI service call here.
-                // The AI response should be added to the chat by calling:
-                // Platform.runLater(() -> addMessage(geminiResponse, false));
             }
         };
 

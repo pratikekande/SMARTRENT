@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class dataservice {
@@ -135,26 +136,12 @@ public class dataservice {
         return querySnapshot.get().getDocuments();
     }
 
-    /**
-     * Updates an existing flat document in Firestore with new data.
-     * @param flatId The unique ID of the document to update.
-     * @param data A map containing the fields and new values to update.
-     * @throws ExecutionException
-     * @throws InterruptedException
-     */
     public void updateFlat(String flatId, Map<String, Object> data) throws ExecutionException, InterruptedException {
         DocumentReference flatRef = db.collection("flats").document(flatId);
         flatRef.update(data).get();
         System.out.println("Flat details updated for document: " + flatId);
     }
 
-    /**
-     * Updates a flat document to remove tenant information by setting tenant fields to null.
-     * This effectively makes the flat vacant without deleting the property record.
-     * @param flatId The document ID of the flat to update.
-     * @throws ExecutionException if the database operation fails.
-     * @throws InterruptedException if the thread is interrupted while waiting.
-     */
     public void removeTenantFromFlat(String flatId) throws ExecutionException, InterruptedException {
         DocumentReference flatRef = db.collection("flats").document(flatId);
         Map<String, Object> updates = new HashMap<>();
@@ -213,10 +200,6 @@ public class dataservice {
         return docRef.update("status", newStatus);
     }
 
-    /**
-     * Retrieves all documents from a collection.
-     * If the collection is "MaintenanceRequests", it sorts them by date in descending order.
-     */
     public List<QueryDocumentSnapshot> getAllData(String collection) throws InterruptedException, ExecutionException {
         if (db == null) {
             System.err.println("Firestore database is not initialized. Call initializefirebase() first.");
@@ -231,5 +214,29 @@ public class dataservice {
 
         ApiFuture<QuerySnapshot> future = query.get();
         return future.get().getDocuments();
+    }
+
+    /**
+     * Deletes a specific flat document from the 'flats' collection in Firestore.
+     * This method is asynchronous and returns a CompletableFuture.
+     *
+     * @param flatId The unique ID of the flat document to be deleted.
+     * @return A CompletableFuture that completes when the deletion is successful,
+     * or completes exceptionally if an error occurs.
+     */
+    public CompletableFuture<Void> deleteFlat(String flatId) {
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        ApiFuture<WriteResult> writeResultApiFuture = db.collection("flats").document(flatId).delete();
+
+        writeResultApiFuture.addListener(() -> {
+            try {
+                writeResultApiFuture.get(); // Throws exception on failure
+                completableFuture.complete(null); // Success
+            } catch (Exception e) {
+                completableFuture.completeExceptionally(e); // Failure
+            }
+        }, Runnable::run); // Use a direct executor to run the listener
+
+        return completableFuture;
     }
 }

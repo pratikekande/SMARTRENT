@@ -4,7 +4,7 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.smartrent.Controller.dataservice;
 import com.smartrent.Model.Owner.Flat;
-import com.smartrent.View.Signin;
+import com.smartrent.View.LandingPage;
 import com.smartrent.View.Tenant.Component.Sidebar;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -38,20 +38,17 @@ public class TenantDashboard {
     private BorderPane contentWrapper;
     private VBox dashboardContent;
 
-    // ✅ NEW & MODIFIED: Member variables for data and UI components
     private dataservice ds;
     private String tenantId;
-    private Label tenantNameLabel; // For the header
+    private Label tenantNameLabel;
     private ImageView propertyImageView;
     private Label societyNameValueLabel, flatNoValueLabel, addressValueLabel, tenantNameValueLabel, tenantEmailValueLabel, rentValueLabel;
     private Text welcomeText;
-    // --- END NEW ---
-
-    // --- Method now accepts tenantId to identify the logged-in user ---
+    
     public Scene createScene(Stage primaryStage, String tenantId) {
         this.primaryStage = primaryStage;
-        this.tenantId = tenantId; // Store the tenant's ID (email)
-        this.ds = new dataservice(); // Initialize the data service
+        this.tenantId = tenantId;
+        this.ds = new dataservice();
 
         BorderPane root = new BorderPane();
         sidebar = new Sidebar("Tenant Dashboard");
@@ -62,7 +59,7 @@ public class TenantDashboard {
         contentWrapper.setTop(profileHeader);
         root.setCenter(contentWrapper);
 
-        this.welcomeText = new Text("Welcome, Sahil");
+        this.welcomeText = new Text("Welcome");
         welcomeText.setFont(Font.font("System", FontWeight.BOLD, 26));
         welcomeText.setFill(Color.web("#34495E"));
 
@@ -72,17 +69,12 @@ public class TenantDashboard {
         subtitleText.setFill(Color.GRAY);
 
         String cardBaseStyle = "-fx-background-color: #636ae8; " +
-                               "-fx-border-radius: 16; " +
-                               "-fx-background-radius: 16; " +
-                               "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 3);";
+                                 "-fx-border-radius: 16; " +
+                                 "-fx-background-radius: 16; " +
+                                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 3);";
 
-        // --- Pay Rent Card ---
         VBox payRentCard = createDashboardCard("Pay Rent", "Payment made Easy", cardBaseStyle);
-
-        // --- Maintenance Card ---
         VBox maintenanceCard = createDashboardCard("Maintenance Request", cardBaseStyle);
-
-        // --- Upcoming Rent Card ---
         VBox upcomingRentCard = createDashboardCard("Upcoming Rent", "Your next rent payment is due on August 5th, 2025.", cardBaseStyle);
 
         HBox cardRow = new HBox(25, payRentCard, maintenanceCard, upcomingRentCard);
@@ -98,7 +90,6 @@ public class TenantDashboard {
         HBox bottomRow = new HBox(30, propertyDetailsBox, notifBox);
         bottomRow.setAlignment(Pos.TOP_LEFT);
 
-        // ✅ MODIFIED: Added tenantNameLabel to the welcome message
         HBox welcomeBox = new HBox(5, welcomeText, this.tenantNameLabel);
         welcomeBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -107,20 +98,14 @@ public class TenantDashboard {
         dashboardContent.setStyle("-fx-background-color: #f8fafc;");
         contentWrapper.setCenter(dashboardContent);
 
-        // --- NAVIGATION & DATA LOADING ---
         setupNavigation(payRentCard, maintenanceCard);
 
-        // ✅ NEW: Load the flat data when the dashboard is created
         loadTenantFlatDetails(); 
 
         Scene scene = new Scene(root, 1280, 720);
         return scene;
     }
 
-    /**
-     * ✅ NEW METHOD
-     * Fetches the assigned flat's details from Firestore and updates the UI.
-     */
     private void loadTenantFlatDetails() {
         CompletableFuture.runAsync(() -> {
             try {
@@ -139,13 +124,6 @@ public class TenantDashboard {
         });
     }
 
-    // private void updateTenantNameOnUI(String newName) {
-    //     welcomeText.setText("Welcome, " + newName);
-    //     tenantNameHeaderLabel.setText(newName);
-    //     tenantNameDetailsLabel.setText(newName);
-    // }  HOw TO APPLY THIS GEMINI
-
-
     private void setupNavigation(VBox payRentCard, VBox maintenanceCard) {
         sidebar.getMenuButtons()[0].setOnAction(e -> {
             sidebar.highlight("Tenant Dashboard");
@@ -159,43 +137,28 @@ public class TenantDashboard {
             contentWrapper.setCenter(view);
         });
 
-        // MODIFIED: This block is now corrected for Payment History
         sidebar.getMenuButtons()[2].setOnAction(e -> {
-            sidebar.highlight("Payment History");
-            // Create the history page by passing the logged-in tenant's email (tenantId)
+            sidebar.highlight("Rent History");
             TenantPaymentHistory payPage = new TenantPaymentHistory(this.tenantId);
-            // Call getView() with no arguments. This fixes the error.
             VBox view = payPage.getView();
             contentWrapper.setCenter(view);
         });
 
         sidebar.getMenuButtons()[3].setOnAction(e -> {
-            System.out.println("Logging out... Navigating to Signin Page.");
-
-            // 1. Create an instance of your Signin class
-            Signin signinPage = new Signin();
-
-            // 2. Your Signin class needs the stage to handle navigation after a successful login
-            signinPage.setSigninStage(primaryStage);
-
-            // 3. Your createSigninPage method needs a Runnable for its "Home" button.
-            // Since we are logging out, there's no "home" to go back to, so we provide an empty action.
-            Runnable doNothing = () -> {};
-
-            // 4. Create the root layout for the sign-in page
-            HBox signinRoot = signinPage.createSigninPage(doNothing);
-
-            // 5. Create a new Scene with that layout
-            Scene signinScene = new Scene(signinRoot, 1280, 720);
-
-            // 6. Set the primary stage's scene to the new sign-in scene
-            primaryStage.setScene(signinScene);
+            System.out.println("Logging out... Navigating to Landing Page.");
+            LandingPage landingPage = new LandingPage();
+            try {
+                landingPage.start(primaryStage);
+            } catch (Exception ex) {
+                System.err.println("Error returning to landing page.");
+                ex.printStackTrace();
+            }
         });
 
         payRentCard.setOnMouseClicked((MouseEvent e) -> {
             sidebar.highlight("");
             Payment paymentPage = new Payment(this.tenantId);
-            VBox view = paymentPage.getView(() -> {
+            Pane view = paymentPage.getView(() -> {
                 sidebar.highlight("Tenant Dashboard");
                 contentWrapper.setCenter(dashboardContent);
             });
@@ -205,7 +168,7 @@ public class TenantDashboard {
         maintenanceCard.setOnMouseClicked((MouseEvent e) -> {
             sidebar.highlight("");
             RaiseMaintanance raisePage = new RaiseMaintanance(this.tenantId);
-            VBox view = raisePage.getView(() -> {
+            Pane view = raisePage.getView(() -> {
                 sidebar.highlight("Tenant Dashboard");
                 contentWrapper.setCenter(dashboardContent);
             });
@@ -225,7 +188,6 @@ public class TenantDashboard {
         profileImageView.setFitHeight(36);
         profileImageView.setClip(new Circle(18, 18, 18));
 
-        // ✅ MODIFIED: Initialize the member variable
         tenantNameLabel = new Label("Loading...");
         tenantNameLabel.setFont(Font.font("System", FontWeight.SEMI_BOLD, 15));
 
@@ -233,20 +195,17 @@ public class TenantDashboard {
         profileBox.setAlignment(Pos.CENTER);
         profileBox.setCursor(Cursor.HAND);
 
-        // ✅ This is the new, corrected version
         profileBox.setOnMouseClicked(e -> {
             sidebar.highlight("");
             TenantProfilePage profilePage = new TenantProfilePage();
 
-
-            // This callback instantly updates ALL name labels on the dashboard after a save.
             Consumer<String> onNameUpdateAction = newName -> tenantNameLabel.setText(newName);
 
-            // We now pass the clarified actions to the profile page
             Node profileView = profilePage.getView(() -> {
                 sidebar.highlight("Tenant Dashboard");
                 contentWrapper.setCenter(dashboardContent);
                 }, this.tenantId, onNameUpdateAction);
+            
             contentWrapper.setCenter(profileView);
         });
 
@@ -294,7 +253,6 @@ public class TenantDashboard {
                 createNotificationItem("📦", "#8B5CF6", "Package Delivered", "2 days ago")
         );
 
-        // The main container box
         VBox notifBox = new VBox(15, notifTitle, notificationsContainer);
         notifBox.setPadding(new Insets(25));
         notifBox.setPrefWidth(350);
@@ -308,10 +266,9 @@ public class TenantDashboard {
     }
 
     private Node createNotificationItem(String iconChar, String iconColorHex, String titleText, String timeText) {
-        // Icon part with a colored circular background
         StackPane iconPane = new StackPane();
         Circle iconBackground = new Circle(20, Color.web(iconColorHex));
-        iconBackground.setOpacity(0.12); // Make the background subtle
+        iconBackground.setOpacity(0.12);
         Label iconLabel = new Label(iconChar);
         iconLabel.setFont(Font.font("System", 16));
         iconPane.getChildren().addAll(iconBackground, iconLabel);
@@ -336,10 +293,6 @@ public class TenantDashboard {
         return notificationRow;
     }
 
-    /**
-     * ✅ MODIFIED
-     * Initializes UI components as member variables and builds the details grid.
-     */
     private Node createPropertyDetailsBox() {
         VBox propertyBox = new VBox();
         propertyBox.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12; -fx-border-color: #E5E7EB; -fx-border-width: 1;");
@@ -349,7 +302,6 @@ public class TenantDashboard {
         VBox scrollableContent = new VBox(15);
         scrollableContent.setPadding(new Insets(20));
 
-        // Initialize the member ImageView
         propertyImageView = new ImageView();
         propertyImageView.setFitHeight(250);
         propertyImageView.setPreserveRatio(true);
@@ -372,8 +324,6 @@ public class TenantDashboard {
         col1.setPrefWidth(120);
         detailsGrid.getColumnConstraints().addAll(col1);
 
-
-        // Initialize member variables for the value labels
         societyNameValueLabel = createDetailValue("Loading...");
         flatNoValueLabel = createDetailValue("Loading...");
         addressValueLabel = createDetailValue("Loading...");
@@ -381,7 +331,6 @@ public class TenantDashboard {
         tenantEmailValueLabel = createDetailValue("Loading...");
         rentValueLabel = createDetailValue("Loading...");
 
-        // Add all required rows to the grid
         detailsGrid.add(createDetailLabel("Society Name:"), 0, 0);
         detailsGrid.add(societyNameValueLabel, 1, 0);
         detailsGrid.add(createDetailLabel("Flat No:"), 0, 1);
@@ -402,7 +351,7 @@ public class TenantDashboard {
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         
         propertyBox.getChildren().add(scrollPane);
-     
+       
         return propertyBox;
     }
 
@@ -421,10 +370,6 @@ public class TenantDashboard {
         return label;
     }
 
-    /**
-     * ✅ NEW METHOD
-     * Updates the UI with data from the fetched Flat object.
-     */
     private void updateFlatDetailsUI(Flat flat) {
         if (flat == null) return;
         
@@ -435,8 +380,6 @@ public class TenantDashboard {
         tenantNameValueLabel.setText(flat.getTenantName());
         tenantEmailValueLabel.setText(flat.getTenantEmail());
         rentValueLabel.setText("₹" + flat.getRent());
-
-        System.out.println(flat.getImageUrl());
 
         try {
             if (flat.getImageUrl() != null && !flat.getImageUrl().isEmpty()) {
@@ -450,10 +393,6 @@ public class TenantDashboard {
         }
     }
 
-    /**
-     * ✅ NEW METHOD
-     * Updates the UI to show that no flat is assigned.
-     */
     private void showNoFlatAssigned() {
         tenantNameLabel.setText(this.tenantId);
         societyNameValueLabel.setText("N/A");
@@ -464,11 +403,7 @@ public class TenantDashboard {
         rentValueLabel.setText("N/A");
     } 
 
-     /**
-     * ✅ NEW METHOD
-     * Updates the UI to show an error state.
-     */
-    private void showErrorLoadingFlat() {
+   private void showErrorLoadingFlat() {
         tenantNameLabel.setText("Error");
         societyNameValueLabel.setText("Error");
         flatNoValueLabel.setText("Error");
@@ -477,6 +412,4 @@ public class TenantDashboard {
         tenantEmailValueLabel.setText("Error");
         rentValueLabel.setText("Error");
     }
-    
-    
 }

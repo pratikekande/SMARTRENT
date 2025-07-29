@@ -2,7 +2,7 @@ package com.smartrent.View.Owner;
 
 import com.smartrent.Controller.dataservice;
 import com.smartrent.Model.Owner.Flat;
-import javafx.application.Platform;
+//import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

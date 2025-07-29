@@ -28,6 +28,7 @@ public class Sidebar extends VBox {
     private final String hoverStyle = "-fx-background-color: #1E293B; -fx-text-fill: white; -fx-font-size: 15; -fx-alignment: CENTER_LEFT; -fx-padding: 10 0 10 30;";
 
     public Sidebar(String activeItem) {
+        this.currentActiveItem = activeItem; // Set initial active item
         setSpacing(20);
         setPrefWidth(200);
         setStyle("-fx-background-color: #0F172A;");
@@ -70,10 +71,8 @@ public class Sidebar extends VBox {
         for (int i = 0; i < menuItems.length; i++) {
             String item = menuItems[i];
             Button btn = new Button(item);
-            btn.setStyle(item.equals(activeItem) ? activeStyle : defaultStyle);
+            btn.setStyle(item.equals(this.currentActiveItem) ? activeStyle : defaultStyle);
             btn.setMaxWidth(Double.MAX_VALUE);
-
-            // --- ADDED: HOVER EFFECT LOGIC ---
 
             // Set the event handler for when the mouse enters the button
             btn.setOnMouseEntered(event -> {
@@ -90,9 +89,7 @@ public class Sidebar extends VBox {
                 btn.setStyle(item.equals(this.currentActiveItem) ? activeStyle : defaultStyle);
                 btn.setCursor(Cursor.DEFAULT); // Change cursor back to default
             });
-
-            // --- END OF HOVER EFFECT LOGIC ---
-
+            
             menuButtons[i] = btn;
             navMenu.getChildren().add(btn);
         }
@@ -103,6 +100,7 @@ public class Sidebar extends VBox {
 
     // Public method to set active style by button name
     public void highlight(String activeItem) {
+        this.currentActiveItem = activeItem; // Update the state
         for (int i = 0; i < menuButtons.length; i++) {
             Button btn = menuButtons[i];
             if (menuItems[i].equals(activeItem)) {
