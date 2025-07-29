@@ -281,7 +281,7 @@ public class RaiseMaintanance {
         String description = descriptionArea.getText();
 
         if (tenantName.isEmpty() || tenantEmail.isEmpty() || !tenantEmail.contains("@") || title.isEmpty() || description.isEmpty()) {
-            statusLabel.setText("All fields are required. Please enter a valid email.");
+            statusLabel.setText("All fields are required.");
             statusLabel.setTextFill(Color.RED);
             return;
         }

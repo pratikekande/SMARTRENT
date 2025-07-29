@@ -1,6 +1,5 @@
 package com.smartrent.View.Owner;
 
-//import com.google.cloud.firestore.DocumentSnapshot;
 import com.smartrent.Model.Owner.OwnerProfile;
 import com.smartrent.Controller.*;
 import javafx.application.Platform;
@@ -48,12 +47,8 @@ public class OwnerProfilePage {
         // Header
         Text title = new Text("My Profile");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 28));
-        Button backButton = new Button("← Back to Dashboard");
-        backButton.setFont(Font.font("System", FontWeight.SEMI_BOLD, 14));
-        backButton.setOnAction(e -> onBack.run());
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox header = new HBox(20, title, spacer, backButton);
+        // Back button has been removed from here
+        HBox header = new HBox(title);
         header.setAlignment(Pos.CENTER_LEFT);
 
         // Profile Image
@@ -78,8 +73,8 @@ public class OwnerProfilePage {
 
         // Button Actions
         editButton.setOnAction(e -> switchToEditMode());
+        // The onBack runnable is now only used here, to return after saving
         saveButton.setOnAction(e -> saveChanges(onBack));
-
 
         // Main content box
         VBox profileDetailsBox = new VBox(30, profileImageView, profileDetailsContainer, buttonsBox);
@@ -110,10 +105,10 @@ public class OwnerProfilePage {
 
         // Bind save button's disable property to text fields being empty
         saveButton.disableProperty().bind(
-            Bindings.isEmpty(nameField.textProperty())
-            .or(Bindings.isEmpty(emailField.textProperty()))
-            .or(Bindings.isEmpty(phoneField.textProperty()))
-            .or(Bindings.isEmpty(addressField.textProperty()))
+                Bindings.isEmpty(nameField.textProperty())
+                .or(Bindings.isEmpty(emailField.textProperty()))
+                .or(Bindings.isEmpty(phoneField.textProperty()))
+                .or(Bindings.isEmpty(addressField.textProperty()))
         );
     }
 
@@ -202,19 +197,18 @@ public class OwnerProfilePage {
         }).thenRun(() -> Platform.runLater(() -> {
             loadingIndicator.setVisible(false);
             populateFields(currentOwnerProfile); // Update labels with new data
-            
+
             // Execute the dashboard callback with the new name
             if (onNameUpdateCallback != null) {
                 onNameUpdateCallback.accept(nameField.getText());
             }
             // --- START: ADDED SUCCESS POP-UP ---
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Success");
-                    alert.setHeaderText("Profile Saved");
-                    alert.setContentText("Your profile has been successfully updated.");
-                    alert.showAndWait();
-                    // --- END: ADDED SUCCESS POP-UP ---
-
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Success");
+            alert.setHeaderText("Profile Saved");
+            alert.setContentText("Your profile has been successfully updated.");
+            alert.showAndWait();
+            // --- END: ADDED SUCCESS POP-UP ---
 
             back.run();
         }));
@@ -264,7 +258,7 @@ public class OwnerProfilePage {
         GridPane grid = new GridPane();
         grid.setHgap(20);
         grid.setVgap(18);
-        
+
         nameField = new TextField();
         emailField = new TextField();
         phoneField = new TextField();

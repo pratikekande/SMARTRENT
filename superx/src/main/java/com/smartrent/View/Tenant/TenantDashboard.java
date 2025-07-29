@@ -44,7 +44,7 @@ public class TenantDashboard {
     private ImageView propertyImageView;
     private Label societyNameValueLabel, flatNoValueLabel, addressValueLabel, tenantNameValueLabel, tenantEmailValueLabel, rentValueLabel;
     private Text welcomeText;
-    
+
     public Scene createScene(Stage primaryStage, String tenantId) {
         this.primaryStage = primaryStage;
         this.tenantId = tenantId;
@@ -63,18 +63,17 @@ public class TenantDashboard {
         welcomeText.setFont(Font.font("System", FontWeight.BOLD, 26));
         welcomeText.setFill(Color.web("#34495E"));
 
-
-        Text subtitleText = new Text("Here’s a summary of your rental account.");
+        Text subtitleText = new Text("Here’s your Property.");
         subtitleText.setFont(Font.font("System", 14));
         subtitleText.setFill(Color.GRAY);
 
         String cardBaseStyle = "-fx-background-color: #636ae8; " +
-                                 "-fx-border-radius: 16; " +
-                                 "-fx-background-radius: 16; " +
-                                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 3);";
+                "-fx-border-radius: 16; " +
+                "-fx-background-radius: 16; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 3);";
 
         VBox payRentCard = createDashboardCard("Pay Rent", "Payment made Easy", cardBaseStyle);
-        VBox maintenanceCard = createDashboardCard("Maintenance Request", cardBaseStyle);
+        VBox maintenanceCard = createDashboardCard("Maintenance Request", "Raise a Complaint", cardBaseStyle);
         VBox upcomingRentCard = createDashboardCard("Upcoming Rent", "Your next rent payment is due on August 5th, 2025.", cardBaseStyle);
 
         HBox cardRow = new HBox(25, payRentCard, maintenanceCard, upcomingRentCard);
@@ -90,9 +89,6 @@ public class TenantDashboard {
         HBox bottomRow = new HBox(30, propertyDetailsBox, notifBox);
         bottomRow.setAlignment(Pos.TOP_LEFT);
 
-        HBox welcomeBox = new HBox(5, welcomeText, this.tenantNameLabel);
-        welcomeBox.setAlignment(Pos.CENTER_LEFT);
-
         dashboardContent = new VBox(25, welcomeText, subtitleText, cardRow, bottomRow);
         dashboardContent.setPadding(new Insets(20, 40, 40, 40));
         dashboardContent.setStyle("-fx-background-color: #f8fafc;");
@@ -100,11 +96,64 @@ public class TenantDashboard {
 
         setupNavigation(payRentCard, maintenanceCard);
 
-        loadTenantFlatDetails(); 
+        // Load both tenant name and flat details
+        loadTenantName();
+        loadTenantFlatDetails();
 
         Scene scene = new Scene(root, 1280, 720);
         return scene;
     }
+
+    /**
+     * Loads the tenant's name and updates the UI.
+     * It updates both the header label and the main welcome text.
+     */
+    private void loadTenantName() {
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                // First, try to get data from 'TenantProfile'
+                return ds.getTenantProfileData("TenantProfile", this.tenantId);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).thenAccept(profileSnapshot -> {
+            if (profileSnapshot != null && profileSnapshot.exists() && profileSnapshot.getString("name") != null && !profileSnapshot.getString("name").isEmpty()) {
+                String name = profileSnapshot.getString("name");
+                Platform.runLater(() -> {
+                    tenantNameLabel.setText(name);
+                    welcomeText.setText("Welcome, " + name);
+                });
+            } else {
+                // Fallback: If no profile, get the name from the assigned flat
+                CompletableFuture.supplyAsync(() -> {
+                    try {
+                        List<QueryDocumentSnapshot> documents = ds.getFlatByTenant(this.tenantId);
+                        if (documents != null && !documents.isEmpty()) {
+                            return documents.get(0).toObject(Flat.class);
+                        }
+                        return null;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }).thenAccept(flat -> {
+                    Platform.runLater(() -> {
+                        if (flat != null && flat.getTenantName() != null) {
+                            String name = flat.getTenantName();
+                            tenantNameLabel.setText(name);
+                            welcomeText.setText("Welcome, " + name);
+                        } else {
+                            // If no data is found anywhere, just show the ID
+                            tenantNameLabel.setText(this.tenantId);
+                            welcomeText.setText("Welcome");
+                        }
+                    });
+                });
+            }
+        });
+    }
+
 
     private void loadTenantFlatDetails() {
         CompletableFuture.runAsync(() -> {
@@ -199,13 +248,22 @@ public class TenantDashboard {
             sidebar.highlight("");
             TenantProfilePage profilePage = new TenantProfilePage();
 
-            Consumer<String> onNameUpdateAction = newName -> tenantNameLabel.setText(newName);
+            // This action updates both the header and the welcome text immediately for a smooth UX
+            Consumer<String> onNameUpdateAction = newName -> {
+                tenantNameLabel.setText(newName);
+                welcomeText.setText("Welcome, " + newName);
+            };
 
-            Node profileView = profilePage.getView(() -> {
+            // This action runs when returning from the profile page
+            Runnable onBackAction = () -> {
                 sidebar.highlight("Tenant Dashboard");
                 contentWrapper.setCenter(dashboardContent);
-                }, this.tenantId, onNameUpdateAction);
-            
+                // Reload the name from Firestore to ensure it's the latest version
+                loadTenantName();
+            };
+
+            Node profileView = profilePage.getView(onBackAction, this.tenantId, onNameUpdateAction);
+
             contentWrapper.setCenter(profileView);
         });
 
@@ -258,9 +316,9 @@ public class TenantDashboard {
         notifBox.setPrefWidth(350);
         notifBox.setStyle(
                 "-fx-background-color: #ffffff; " +
-                "-fx-background-radius: 12; " +
-                "-fx-border-color: #E5E7EB; " +
-                "-fx-border-width: 1;"
+                        "-fx-background-radius: 12; " +
+                        "-fx-border-color: #E5E7EB; " +
+                        "-fx-border-width: 1;"
         );
         return notifBox;
     }
@@ -305,12 +363,19 @@ public class TenantDashboard {
         propertyImageView = new ImageView();
         propertyImageView.setFitHeight(250);
         propertyImageView.setPreserveRatio(true);
-        
+
         StackPane imageContainer = new StackPane(propertyImageView);
         imageContainer.setPrefHeight(250);
         imageContainer.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 8;");
-        imageContainer.setClip(new Rectangle(imageContainer.getPrefWidth(), imageContainer.getPrefHeight()) {{ setArcWidth(16); setArcHeight(16); widthProperty().bind(imageContainer.widthProperty()); heightProperty().bind(imageContainer.heightProperty()); }});
-        
+        imageContainer.setClip(new Rectangle(imageContainer.getPrefWidth(), imageContainer.getPrefHeight()) {
+            {
+                setArcWidth(16);
+                setArcHeight(16);
+                widthProperty().bind(imageContainer.widthProperty());
+                heightProperty().bind(imageContainer.heightProperty());
+            }
+        });
+
         Label detailsTitle = new Label("Property Details");
         detailsTitle.setFont(Font.font("System", FontWeight.BOLD, 18));
         detailsTitle.setTextFill(Color.web("#111827"));
@@ -319,7 +384,7 @@ public class TenantDashboard {
         GridPane detailsGrid = new GridPane();
         detailsGrid.setVgap(12);
         detailsGrid.setHgap(10);
-        
+
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPrefWidth(120);
         detailsGrid.getColumnConstraints().addAll(col1);
@@ -345,13 +410,13 @@ public class TenantDashboard {
         detailsGrid.add(rentValueLabel, 1, 5);
 
         scrollableContent.getChildren().addAll(imageContainer, detailsTitle, detailsGrid);
-        
+
         ScrollPane scrollPane = new ScrollPane(scrollableContent);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        
+
         propertyBox.getChildren().add(scrollPane);
-       
+
         return propertyBox;
     }
 
@@ -372,8 +437,8 @@ public class TenantDashboard {
 
     private void updateFlatDetailsUI(Flat flat) {
         if (flat == null) return;
-        
-        tenantNameLabel.setText(flat.getTenantName());
+
+        // Note: The main tenantNameLabel in the header is updated by loadTenantName()
         societyNameValueLabel.setText(flat.getSocietyName());
         flatNoValueLabel.setText(flat.getFlatNo());
         addressValueLabel.setText(flat.getAddress());
@@ -401,9 +466,9 @@ public class TenantDashboard {
         tenantNameValueLabel.setText(this.tenantId);
         tenantEmailValueLabel.setText("N/A");
         rentValueLabel.setText("N/A");
-    } 
+    }
 
-   private void showErrorLoadingFlat() {
+    private void showErrorLoadingFlat() {
         tenantNameLabel.setText("Error");
         societyNameValueLabel.setText("Error");
         flatNoValueLabel.setText("Error");

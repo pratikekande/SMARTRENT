@@ -2,6 +2,7 @@ package com.smartrent.View.Owner;
 
 import com.smartrent.View.LandingPage;
 import com.smartrent.View.Owner.Component.OSidebar;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.smartrent.Controller.*;
 import com.smartrent.Model.Owner.Flat;
@@ -40,6 +41,7 @@ public class OwnerDashboard {
     private dataservice ds;
     private Label ownerName;
     private VBox flatsListContainer;
+    private Text welcomeTitle; // Made this a member variable to update it
 
     public Scene createScene(Stage stage, String ownerId) {
         this.primaryStage = stage;
@@ -65,25 +67,58 @@ public class OwnerDashboard {
         return new Scene(root, 1280, 720);
     }
 
+    /**
+     * Loads the owner's name and updates the UI.
+     * It updates both the header label and the main welcome text.
+     */
     private void loadOwnerName() {
         CompletableFuture.supplyAsync(() -> {
             try {
-                return ds.getOwnerData("users", this.ownerId);
+                // First, try to get the profile data from the 'OwnerProfile' collection
+                return ds.getOwnerData("OwnerProfile", this.ownerId);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
-        }).thenAccept(documentSnapshot -> {
-            Platform.runLater(() -> {
-                if (documentSnapshot != null && documentSnapshot.exists()) {
-                    String name = documentSnapshot.getString("firstName") + " " + documentSnapshot.getString("lastName");
+        }).thenAccept(profileSnapshot -> {
+            if (profileSnapshot != null && profileSnapshot.exists() && profileSnapshot.getString("name") != null && !profileSnapshot.getString("name").isEmpty()) {
+                String name = profileSnapshot.getString("name");
+                Platform.runLater(() -> {
                     ownerName.setText(name);
-                } else {
-                    ownerName.setText(this.ownerId);
-                }
-            });
+                    if (welcomeTitle != null) {
+                        welcomeTitle.setText("Welcome, " + name);
+                    }
+                });
+            } else {
+                // Fallback: If no profile or name exists, get the name from the 'users' collection
+                CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return ds.getOwnerData("users", this.ownerId);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }).thenAccept(userSnapshot -> {
+                    Platform.runLater(() -> {
+                        if (userSnapshot != null && userSnapshot.exists()) {
+                            String name = userSnapshot.getString("firstName") + " " + userSnapshot.getString("lastName");
+                            ownerName.setText(name);
+                            if (welcomeTitle != null) {
+                                welcomeTitle.setText("Welcome, " + name);
+                            }
+                        } else {
+                            // If no data is found anywhere, just show the ID
+                            ownerName.setText(this.ownerId);
+                             if (welcomeTitle != null) {
+                                welcomeTitle.setText("Welcome");
+                            }
+                        }
+                    });
+                });
+            }
         });
     }
+
 
     private void loadOwnerFlats() {
         if (flatsListContainer == null) return;
@@ -144,10 +179,18 @@ public class OwnerDashboard {
         profileBox.setOnMouseClicked(e -> {
             sidebar.highlight("");
             OwnerProfilePage profilePage = new OwnerProfilePage();
-            Consumer<String> onNameUpdateAction = newName -> ownerName.setText(newName);
+            // This action updates both the header and welcome text immediately for a smooth UX
+            Consumer<String> onNameUpdateAction = newName -> {
+                ownerName.setText(newName);
+                if (welcomeTitle != null) {
+                    welcomeTitle.setText("Welcome, " + newName);
+                }
+            };
+            // This action runs when returning from the profile page
             Runnable onBackAction = () -> {
                 sidebar.highlight("Owner Dashboard");
                 contentWrapper.setCenter(dashboardView);
+                // Reload the name from Firestore to ensure it's the latest version
                 loadOwnerName();
             };
             Node profileView = profilePage.getView(onBackAction, this.ownerId, onNameUpdateAction);
@@ -204,9 +247,11 @@ public class OwnerDashboard {
     }
 
     private Node createDashboardView() {
-        Text welcomeTitle = new Text("Welcome");
+        // Initialize the member variable here
+        welcomeTitle = new Text("Welcome");
         welcomeTitle.setFont(Font.font("System", FontWeight.BOLD, 28));
         welcomeTitle.setFill(Color.web("#111827"));
+
         Text welcomeSubtitle = new Text("Here is the latest summary of your properties.");
         welcomeSubtitle.setFont(Font.font("System", 15));
         welcomeSubtitle.setFill(Color.web("#6B7280"));
@@ -256,8 +301,6 @@ public class OwnerDashboard {
         flatsListContainer.setPadding(new Insets(10));
 
         ScrollPane scrollableFlats = new ScrollPane(flatsListContainer);
-        // scrollableFlats.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        // scrollableFlats.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollableFlats.setFitToWidth(true);
         VBox.setVgrow(scrollableFlats, Priority.ALWAYS);
 
@@ -394,7 +437,6 @@ public class OwnerDashboard {
         detailsGrid.add(createDetailLabel("Monthly Rent:"), 0, 5);
         detailsGrid.add(createDetailValue("₹" + flat.getRent()), 1, 5);
 
-        // --- BUTTONS SECTION (FUNCTIONALITY ADDED) ---
         Button removeButton = new Button("Remove Flat");
         removeButton.setFont(Font.font("System", FontWeight.BOLD, 13));
         removeButton.setCursor(Cursor.HAND);
