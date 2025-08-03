@@ -17,7 +17,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
+//import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
 public class AboutUsPage {
@@ -269,10 +269,10 @@ public class AboutUsPage {
         return stack;
     }
 
-    private Text createText(String content, boolean isHighlight) {
-        Text text = new Text(content);
-        text.setFont(Font.font("System", isHighlight ? FontWeight.BOLD : FontWeight.NORMAL, 18));
-        text.setFill(isHighlight ? Color.web("#D7BDE2") : Color.web("#E0E0E0"));
-        return text;
-    }
+    // private Text createText(String content, boolean isHighlight) {
+    //     Text text = new Text(content);
+    //     text.setFont(Font.font("System", isHighlight ? FontWeight.BOLD : FontWeight.NORMAL, 18));
+    //     text.setFill(isHighlight ? Color.web("#D7BDE2") : Color.web("#E0E0E0"));
+    //     return text;
+    // }
 }

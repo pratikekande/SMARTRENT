@@ -2,21 +2,18 @@ package com.smartrent.Model.Tenant;
 
 import com.google.cloud.Timestamp;
 
-/**
- * Represents the data for a UPI payment transaction.
- * It holds all relevant details for a payment record.
- */
 public class PaymentData {
 
     private double rentAmount;
     private Timestamp paymentDate;
     private String upiId;
     private String tenantName;
-    private String tenantEmail; // NEW: Field for the tenant's email
+    private String tenantEmail;
+    private String ownerEmail; // <-- 1. ADD THIS CRITICAL FIELD
 
     public PaymentData() {}
 
-    // --- Getters and Setters for all fields ---
+    // --- Getters and Setters ---
 
     public double getRentAmount() {
         return rentAmount;
@@ -50,19 +47,21 @@ public class PaymentData {
         this.tenantName = tenantName;
     }
 
-    /**
-     * NEW: Gets the email of the tenant making the payment.
-     * @return The tenant's email string.
-     */
     public String getTenantEmail() {
         return tenantEmail;
     }
 
-    /**
-     * NEW: Sets the email of the tenant making the payment.
-     * @param tenantEmail The tenant's email string to set.
-     */
     public void setTenantEmail(String tenantEmail) {
         this.tenantEmail = tenantEmail;
+    }
+
+    // --- 2. ADD GETTER AND SETTER FOR THE NEW FIELD ---
+    
+    public String getOwnerEmail() {
+        return ownerEmail;
+    }
+
+    public void setOwnerEmail(String ownerEmail) {
+        this.ownerEmail = ownerEmail;
     }
 }

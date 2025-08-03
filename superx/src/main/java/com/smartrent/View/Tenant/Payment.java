@@ -2,6 +2,7 @@ package com.smartrent.View.Tenant;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.smartrent.Controller.dataservice;
 import com.smartrent.Model.Tenant.PaymentData;
 import javafx.animation.FadeTransition;
@@ -30,6 +31,7 @@ import javafx.util.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 public class Payment {
 
@@ -236,6 +238,9 @@ public class Payment {
         }
     }
     
+    /**
+     * CRITICAL FIX: This method now fetches the owner's email and adds it to the payment record.
+     */
     private void handlePayment(ComboBox<String> paymentMethod) {
         if (!paymentMethod.getValue().equals("UPI")) {
             statusLabel.setText("This functionality is only for UPI payments.");
@@ -247,46 +252,70 @@ public class Payment {
         LocalDate localDate = datePicker.getValue();
         String upiId = upiIdField.getText();
         String tenantName = tenantNameField.getText();
-        String tenantEmail = tenantEmailField.getText();
+        String currentTenantEmail = tenantEmailField.getText();
 
-        if (rentStr.isEmpty() || localDate == null || upiId.isEmpty() || tenantName.isEmpty() || tenantEmail.isEmpty() || !tenantEmail.contains("@") || !upiId.contains("@")) {
+        if (rentStr.isEmpty() || localDate == null || upiId.isEmpty() || tenantName.isEmpty() || currentTenantEmail.isEmpty() || !currentTenantEmail.contains("@") || !upiId.contains("@")) {
             statusLabel.setText("Please fill all fields with valid data.");
             statusLabel.setTextFill(Color.RED);
             return;
         }
 
-        try {
-            PaymentData paymentData = new PaymentData();
-            paymentData.setRentAmount(Double.parseDouble(rentStr));
-            paymentData.setUpiId(upiId);
-            paymentData.setTenantName(tenantName);
-            paymentData.setTenantEmail(tenantEmail);
-            
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            paymentData.setPaymentDate(Timestamp.of(date));
+        // Use a background task to avoid freezing the UI
+        Task<Void> paymentTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                // 1. Fetch the flat details to get the owner's email
+                List<QueryDocumentSnapshot> flatDocs = dataService.getFlatByTenant(currentTenantEmail);
+                if (flatDocs.isEmpty()) {
+                    throw new Exception("Could not find a flat for this tenant.");
+                }
+                String ownerEmail = flatDocs.get(0).getString("ownerEmail");
+                if (ownerEmail == null || ownerEmail.isEmpty()) {
+                    throw new Exception("The owner's email is not set for this flat.");
+                }
 
-            dataservice ds = new dataservice();
-            
-            String documentId = tenantEmail + "_" + System.currentTimeMillis();
-            ds.addPayment("Payments", documentId, paymentData);
+                // 2. Create the PaymentData object
+                PaymentData paymentData = new PaymentData();
+                paymentData.setRentAmount(Double.parseDouble(rentStr));
+                paymentData.setUpiId(upiId);
+                paymentData.setTenantName(tenantName);
+                paymentData.setTenantEmail(currentTenantEmail);
+                
+                Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                paymentData.setPaymentDate(Timestamp.of(date));
+                
+                // 3. CRITICAL: Set the owner's email on the payment record
+                paymentData.setOwnerEmail(ownerEmail);
 
-            statusLabel.setText("Payment successful!");
-            statusLabel.setTextFill(Color.GREEN);
+                // 4. Save the payment to the database
+                String documentId = currentTenantEmail + "_" + System.currentTimeMillis();
+                dataService.addPayment("Payments", documentId, paymentData);
+                
+                return null;
+            }
+        };
 
-            playSuccessAnimation();
+        paymentTask.setOnSucceeded(e -> {
+            Platform.runLater(() -> {
+                statusLabel.setText("Payment successful!");
+                statusLabel.setTextFill(Color.GREEN);
+                playSuccessAnimation();
+                amountField.clear();
+                upiIdField.clear();
+                datePicker.setValue(LocalDate.now());
+            });
+        });
 
-            amountField.clear();
-            upiIdField.clear();
-            datePicker.setValue(LocalDate.now());
+        paymentTask.setOnFailed(e -> {
+            Platform.runLater(() -> {
+                Throwable ex = paymentTask.getException();
+                ex.printStackTrace();
+                statusLabel.setText("Error: " + ex.getMessage());
+                statusLabel.setTextFill(Color.RED);
+            });
+        });
 
-        } catch (NumberFormatException nfe) {
-            statusLabel.setText("Invalid rent amount. Please enter a number.");
-            statusLabel.setTextFill(Color.RED);
-        } catch (Exception ex) {
-            statusLabel.setText("An error occurred during payment. Please try again.");
-            statusLabel.setTextFill(Color.RED);
-            ex.printStackTrace();
-        }
+        new Thread(paymentTask).start();
     }
     
     private void createQrPopup() {

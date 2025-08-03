@@ -20,17 +20,16 @@ import java.util.List;
 
 public class RentManagement {
 
-    /**
-     * MODIFIED: The getView method no longer requires any arguments.
-     * @return A VBox containing the complete view.
-     */
-    public VBox getView() {
+    private final String ownerEmail;
 
-        // --- UI Setup ---
+    public RentManagement(String ownerEmail) {
+        this.ownerEmail = ownerEmail;
+    }
+
+    public VBox getView() {
         VBox paymentList = new VBox(15);
         paymentList.setPadding(new Insets(10));
 
-        // Populate the list with payment data from all tenants
         populatePaymentHistory(paymentList);
 
         ScrollPane scrollPane = new ScrollPane(paymentList);
@@ -62,9 +61,6 @@ public class RentManagement {
         return container;
     }
 
-    /**
-     * Fetches all payments from Firestore and updates the UI.
-     */
     private void populatePaymentHistory(VBox container) {
         ProgressIndicator loading = new ProgressIndicator();
         container.getChildren().setAll(loading);
@@ -73,7 +69,7 @@ public class RentManagement {
             @Override
             protected List<PaymentData> call() throws Exception {
                 dataservice ds = new dataservice();
-                List<QueryDocumentSnapshot> documents = ds.getPaymentData("Payments");
+                List<QueryDocumentSnapshot> documents = ds.getPaymentData("Payments", ownerEmail);
                 List<PaymentData> payments = new ArrayList<>();
                 if (documents != null) {
                     for (QueryDocumentSnapshot doc : documents) {
@@ -104,11 +100,6 @@ public class RentManagement {
         new Thread(fetchPaymentsTask).start();
     }
 
-    /**
-     * Creates a card that includes the Tenant's Name.
-     * @param payment The payment data object from Firestore.
-     * @return A VBox representing the payment card.
-     */
     private VBox createPaymentCard(PaymentData payment) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         String date = sdf.format(payment.getPaymentDate().toDate());

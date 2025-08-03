@@ -130,13 +130,13 @@ public class TenantManagement {
         detailsGrid.add(createDetailValue(flat.getTenantEmail()), 1, 4);
 
         // --- ✅ MODIFIED: Delete Button with Logic ---
-        Button deleteButton = new Button("Delete Tenant");
-        deleteButton.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;");
-        deleteButton.setCursor(Cursor.HAND);
+        Button removeButton = new Button("Remove Tenant");
+        removeButton.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;");
+        removeButton.setCursor(Cursor.HAND);
         // Attach the action handler which calls our new method
-        deleteButton.setOnAction(e -> handleDeleteTenant(flat, card));
+        removeButton.setOnAction(e -> handleDeleteTenant(flat, card));
 
-        HBox buttonContainer = new HBox(deleteButton);
+        HBox buttonContainer = new HBox(removeButton);
         buttonContainer.setAlignment(Pos.CENTER_RIGHT);
         buttonContainer.setPadding(new Insets(10, 0, 0, 0));
 
@@ -201,7 +201,7 @@ public class TenantManagement {
             row.setAlignment(Pos.CENTER_LEFT);
             docList.getChildren().add(row);
         }
-        Button downloadDoc = new Button("⬇ Download Selected");
+        Button downloadDoc = new Button("⬆ Upload Document");
         downloadDoc.setMaxWidth(Double.MAX_VALUE);
         downloadDoc.setCursor(Cursor.HAND);
         VBox docsSection = new VBox(20, docTitle, docList, downloadDoc);

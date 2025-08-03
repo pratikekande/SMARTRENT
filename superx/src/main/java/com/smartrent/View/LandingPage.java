@@ -1,11 +1,13 @@
 package com.smartrent.View;
 
+//import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
@@ -249,19 +251,78 @@ public class LandingPage extends Application {
         heroText.getChildren().addAll(heroTitle, heroSubtitle, watchDemo);
 
         // Use a try-catch block for local images to prevent crashing if not found
-        ImageView heroImage = new ImageView();
-        try {
-            heroImage.setImage(new Image("Assets/Images/hero.jpeg"));
-        } catch (IllegalArgumentException e) {
-            System.err.println("Warning: Hero image not found. Using placeholder.");
-            // Optional: Set a placeholder color or shape if image fails
-            heroImage.setImage(new Image("https://via.placeholder.com/550x380/FFFFFF/000000?text=Image+Not+Found"));
-        }
-        heroImage.setFitWidth(550);
-        heroImage.setPreserveRatio(true);
-        heroImage.setEffect(heroImageShadow);
+        // --- Hero Image Slider (Carousel) ---
 
-        heroSection.getChildren().addAll(heroText, heroImage);
+        // Image paths
+        String[] imagePaths = {
+                "Assets/Images/2.jpg",
+                "Assets/Images/4.jpg",
+                "Assets/Images/1.jpg",
+                "Assets/Images/3.jpg",
+        };
+
+        StackPane imageSlider = new StackPane();
+        imageSlider.setPrefWidth(550);
+        imageSlider.setMaxWidth(550);
+
+        // Create ImageViews and add to slider
+        ImageView[] imageViews = new ImageView[imagePaths.length];
+        for (int i = 0; i < imagePaths.length; i++) {
+            ImageView img = new ImageView();
+            try {
+                img.setImage(new Image(imagePaths[i]));
+            } catch (IllegalArgumentException e) {
+                System.err.println("Image not found: " + imagePaths[i]);
+                img.setImage(new Image("https://via.placeholder.com/550x380/FFFFFF/000000?text=Image+Not+Found"));
+            }
+            img.setFitWidth(550);
+            img.setPreserveRatio(true);
+            img.setSmooth(true);
+            img.setEffect(heroImageShadow);
+            img.setTranslateX(0); // Reset position
+            img.setVisible(i == 0); // Show only first image
+            imageViews[i] = img;
+            imageSlider.getChildren().add(img);
+        }
+
+        // Slide animation
+        Timeline sliderTimeline = new Timeline();
+        int[] index = { 0 };
+
+        sliderTimeline.getKeyFrames().add(new KeyFrame(Duration.seconds(3), event -> {
+            int current = index[0];
+            int next = (current + 1) % imageViews.length;
+
+            ImageView currentImage = imageViews[current];
+            ImageView nextImage = imageViews[next];
+
+            nextImage.setTranslateX(-550); // Start from left
+            nextImage.setVisible(true);
+
+            // Animate current image sliding to right
+            TranslateTransition slideOut = new TranslateTransition(Duration.millis(400), currentImage);
+            slideOut.setFromX(0);
+            slideOut.setToX(550);
+
+            // Animate next image sliding in from left
+            TranslateTransition slideIn = new TranslateTransition(Duration.millis(400), nextImage);
+            slideIn.setFromX(-550);
+            slideIn.setToX(0);
+
+            slideOut.setOnFinished(e -> {
+                currentImage.setVisible(false);
+                currentImage.setTranslateX(0);
+                index[0] = next;
+            });
+
+            slideOut.play();
+            slideIn.play();
+        }));
+
+        sliderTimeline.setCycleCount(Timeline.INDEFINITE);
+        sliderTimeline.play();
+
+        heroSection.getChildren().addAll(heroText, imageSlider);
 
         // --- POPULATE UI SECTIONS (defined earlier) ---
 
@@ -343,12 +404,15 @@ public class LandingPage extends Application {
         testiCards.setAlignment(Pos.CENTER);
 
         String[][] testiTexts = {
-                { "Sashi Sir",
-                        "\"SmartRent+ made managing my properties a breeze! The dashboard is intuitive and saves me hours every week.\"" },
+                { "Shashi Sir",
+                        "\"SmartRent+ made managing my properties a breeze! The dashboard is intuitive and saves me hours every week.\"",
+                        "Assets\\Images\\s.png" },
                 { "Sachin Sir",
-                        "\"My tenants love the instant notifications for rent reminders and announcements. It has improved communication tenfold.\"" },
+                        "\"My tenants love the instant notifications for rent reminders and announcements. It has improved communication tenfold.\"",
+                        "Assets\\Images\\s.png" },
                 { "Pramod Sir",
-                        "\"I track all my rent collections in one place now. No more messy spreadsheets. It's truly a game-changer for landlords.\"" }
+                        "\"I track all my rent collections in one place now. No more messy spreadsheets. It's truly a game-changer for landlords.\"",
+                        "Assets\\Images\\p.png" }
         };
 
         for (String[] entry : testiTexts) {
@@ -363,7 +427,8 @@ public class LandingPage extends Application {
             HBox authorInfo = new HBox(15);
             authorInfo.setAlignment(Pos.CENTER_LEFT);
 
-            ImageView avatar = new ImageView(new Image("Assets/Images/image1.jpeg"));
+            // Load avatar image from the entry array
+            ImageView avatar = new ImageView(new Image(entry[2]));
             avatar.setFitWidth(60);
             avatar.setFitHeight(60);
             avatar.setClip(new Circle(30, 30, 30));
@@ -519,7 +584,8 @@ public class LandingPage extends Application {
 
     /**
      * Helper method to smoothly scroll to a specific node within a ScrollPane.
-     * * @param scrollPane  The ScrollPane to scroll.
+     * * @param scrollPane The ScrollPane to scroll.
+     * 
      * @param contentPane The root content pane inside the ScrollPane.
      * @param targetNode  The node to scroll to.
      */

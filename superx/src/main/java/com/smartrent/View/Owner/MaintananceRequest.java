@@ -139,7 +139,6 @@ public class MaintananceRequest {
                 if (documents != null) {
                     for (QueryDocumentSnapshot doc : documents) {
                         MaintenanceRequest request = doc.toObject(MaintenanceRequest.class);
-                        // RE-ADDED: Manually set the document ID. This is the correct fix.
                         request.setDocumentId(doc.getId());
                         requests.add(request);
                     }
@@ -251,9 +250,10 @@ public class MaintananceRequest {
     private Node createHistoryRow(MaintenanceRequest request) {
         String issueText = request.getTitle();
         String date = "N/A";
-        if (request.getSubmittedAt() != null) {
+        // --- FIXED: Use getTimestamp() instead of getSubmittedAt() ---
+        if (request.getTimestamp() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            date = sdf.format(request.getSubmittedAt().toDate());
+            date = sdf.format(request.getTimestamp().toDate());
         }
         String statusText = request.getStatus() != null ? request.getStatus() : "Pending";
 

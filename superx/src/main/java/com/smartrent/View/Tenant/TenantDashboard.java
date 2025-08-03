@@ -275,9 +275,9 @@ public class TenantDashboard {
         return headerBar;
     }
 
-    private VBox createDashboardCard(String titleText, String style) {
-        return createDashboardCard(titleText, null, style);
-    }
+    // private VBox createDashboardCard(String titleText, String style) {
+    //     return createDashboardCard(titleText, null, style);
+    // }
 
     private VBox createDashboardCard(String titleText, String descText, String style) {
         Text title = new Text(titleText);

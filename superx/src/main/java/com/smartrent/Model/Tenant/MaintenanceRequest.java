@@ -11,9 +11,14 @@ public class MaintenanceRequest {
     private String description;
     private String imageUrl;
     private String status;
-    private Timestamp submittedAt;
+    private Timestamp timestamp;
+    private String ownerId;
+    private String flatId;
+    // --- NEW: Added fields for more descriptive location ---
+    private String societyName;
+    private String flatNo;
 
-    // REVERTED: Using @Exclude is the correct approach for your data structure.
+
     @Exclude
     private String documentId;
 
@@ -67,12 +72,45 @@ public class MaintenanceRequest {
         this.status = status;
     }
 
-    public Timestamp getSubmittedAt() {
-        return submittedAt;
+    public Timestamp getTimestamp() {
+        return timestamp;
     }
 
-    public void setSubmittedAt(Timestamp submittedAt) {
-        this.submittedAt = submittedAt;
+    public void setTimestamp(Timestamp timestamp) {
+        this.timestamp = timestamp;
+    }
+    
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getFlatId() {
+        return flatId;
+    }
+
+    public void setFlatId(String flatId) {
+        this.flatId = flatId;
+    }
+
+    // --- NEW: Getters and setters for new fields ---
+    public String getSocietyName() {
+        return societyName;
+    }
+
+    public void setSocietyName(String societyName) {
+        this.societyName = societyName;
+    }
+
+    public String getFlatNo() {
+        return flatNo;
+    }
+
+    public void setFlatNo(String flatNo) {
+        this.flatNo = flatNo;
     }
 
     @Exclude

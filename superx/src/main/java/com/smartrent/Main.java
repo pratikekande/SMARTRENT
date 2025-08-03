@@ -2,7 +2,6 @@ package com.smartrent;
 
 import com.smartrent.Controller.dataservice;
 import com.smartrent.View.LandingPage;
-//import com.smartrent.View.Tenant.TenantDashboard;
 
 import javafx.application.Application;
 

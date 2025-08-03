@@ -5,7 +5,6 @@ import com.smartrent.Controller.dataservice;
 import com.smartrent.Model.Tenant.MaintenanceRequest;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
-//import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -20,31 +19,16 @@ import java.util.List;
 
 public class TenantMaintananceHistory {
 
-    // NEW: A member variable to store the tenant's email.
     private final String tenantEmail;
 
-    /**
-     * NEW: The constructor.
-     * When you create an instance of this class, you must provide the
-     * email of the logged-in tenant.
-     * @param tenantEmail The email address of the currently logged-in tenant.
-     */
     public TenantMaintananceHistory(String tenantEmail) {
         this.tenantEmail = tenantEmail;
     }
 
-    /**
-     * MODIFIED: The getView method now has no parameters.
-     * This will fix the "wiggly line" error in your dashboard.
-     * @return A VBox containing the complete view.
-     */
     public VBox getView() {
-
-        // --- UI Setup ---
         VBox requestList = new VBox(15);
         requestList.setPadding(new Insets(10));
 
-        // MODIFIED: The tenant's email is now passed from the member variable.
         populateMaintenanceHistory(requestList, this.tenantEmail);
 
         ScrollPane scrollPane = new ScrollPane(requestList);
@@ -67,11 +51,6 @@ public class TenantMaintananceHistory {
         return container;
     }
 
-    /**
-     * This method now fetches requests only for a specific tenant.
-     * @param container   The VBox to populate with cards.
-     * @param tenantEmail The email to filter the requests by.
-     */
     private void populateMaintenanceHistory(VBox container, String tenantEmail) {
         ProgressIndicator loading = new ProgressIndicator();
         container.getChildren().setAll(loading);
@@ -80,7 +59,6 @@ public class TenantMaintananceHistory {
             @Override
             protected List<MaintenanceRequest> call() throws Exception {
                 dataservice ds = new dataservice();
-                // This correctly calls the filtered method from your dataservice
                 List<QueryDocumentSnapshot> documents = ds.getMaintenanceRequestsForTenant(tenantEmail);
                 List<MaintenanceRequest> requests = new ArrayList<>();
                 if (documents != null) {
@@ -112,17 +90,15 @@ public class TenantMaintananceHistory {
         new Thread(fetchRequestsTask).start();
     }
 
-    /**
-     * Creates a card using a real MaintenanceRequest object from Firestore.
-     */
     private VBox createMaintenanceCard(MaintenanceRequest request) {
         String issue = request.getTitle();
         String status = request.getStatus() != null ? request.getStatus() : "Unknown";
         
         String date = "N/A";
-        if (request.getSubmittedAt() != null) {
+        // --- FIXED: Changed getSubmittedAt() to getTimestamp() to match the database ---
+        if (request.getTimestamp() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            date = sdf.format(request.getSubmittedAt().toDate());
+            date = sdf.format(request.getTimestamp().toDate());
         }
 
         Label issueLabel = new Label("Issue: " + issue);

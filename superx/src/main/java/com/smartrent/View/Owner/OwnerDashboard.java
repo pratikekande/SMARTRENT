@@ -2,7 +2,7 @@ package com.smartrent.View.Owner;
 
 import com.smartrent.View.LandingPage;
 import com.smartrent.View.Owner.Component.OSidebar;
-import com.google.cloud.firestore.DocumentSnapshot;
+//import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.smartrent.Controller.*;
 import com.smartrent.Model.Owner.Flat;
@@ -67,14 +67,9 @@ public class OwnerDashboard {
         return new Scene(root, 1280, 720);
     }
 
-    /**
-     * Loads the owner's name and updates the UI.
-     * It updates both the header label and the main welcome text.
-     */
     private void loadOwnerName() {
         CompletableFuture.supplyAsync(() -> {
             try {
-                // First, try to get the profile data from the 'OwnerProfile' collection
                 return ds.getOwnerData("OwnerProfile", this.ownerId);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -90,7 +85,6 @@ public class OwnerDashboard {
                     }
                 });
             } else {
-                // Fallback: If no profile or name exists, get the name from the 'users' collection
                 CompletableFuture.supplyAsync(() -> {
                     try {
                         return ds.getOwnerData("users", this.ownerId);
@@ -107,11 +101,10 @@ public class OwnerDashboard {
                                 welcomeTitle.setText("Welcome, " + name);
                             }
                         } else {
-                            // If no data is found anywhere, just show the ID
                             ownerName.setText(this.ownerId);
                              if (welcomeTitle != null) {
-                                welcomeTitle.setText("Welcome");
-                            }
+                                 welcomeTitle.setText("Welcome");
+                             }
                         }
                     });
                 });
@@ -179,18 +172,15 @@ public class OwnerDashboard {
         profileBox.setOnMouseClicked(e -> {
             sidebar.highlight("");
             OwnerProfilePage profilePage = new OwnerProfilePage();
-            // This action updates both the header and welcome text immediately for a smooth UX
             Consumer<String> onNameUpdateAction = newName -> {
                 ownerName.setText(newName);
                 if (welcomeTitle != null) {
                     welcomeTitle.setText("Welcome, " + newName);
                 }
             };
-            // This action runs when returning from the profile page
             Runnable onBackAction = () -> {
                 sidebar.highlight("Owner Dashboard");
                 contentWrapper.setCenter(dashboardView);
-                // Reload the name from Firestore to ensure it's the latest version
                 loadOwnerName();
             };
             Node profileView = profilePage.getView(onBackAction, this.ownerId, onNameUpdateAction);
@@ -224,12 +214,14 @@ public class OwnerDashboard {
 
         sidebar.getMenuButtons()[2].setOnAction(e -> {
             sidebar.highlight("Rent Management");
-            RentManagement rentPage = new RentManagement();
+            RentManagement rentPage = new RentManagement(this.ownerId);
             contentWrapper.setCenter(rentPage.getView());
         });
 
         sidebar.getMenuButtons()[3].setOnAction(e -> {
             sidebar.highlight("Maintenance");
+            // MODIFIED: This now calls the default constructor for MaintananceRequest
+            // which exists in the file you provided.
             MaintananceRequest maintenancePage = new MaintananceRequest();
             contentWrapper.setCenter(maintenancePage.getView());
         });
@@ -247,7 +239,6 @@ public class OwnerDashboard {
     }
 
     private Node createDashboardView() {
-        // Initialize the member variable here
         welcomeTitle = new Text("Welcome");
         welcomeTitle.setFont(Font.font("System", FontWeight.BOLD, 28));
         welcomeTitle.setFill(Color.web("#111827"));
@@ -357,7 +348,7 @@ public class OwnerDashboard {
 
         aiChatButton.setOnMouseClicked(e -> {
             sidebar.highlight("");
-            AIChatPage chatPage = new AIChatPage();
+            AIChatPage chatPage = new AIChatPage(this.ds, this.ownerId);
             Node chatView = chatPage.getView(() -> {
                 sidebar.highlight("Owner Dashboard");
                 contentWrapper.setCenter(this.dashboardView);

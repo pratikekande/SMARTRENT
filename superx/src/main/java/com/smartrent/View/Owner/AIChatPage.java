@@ -1,5 +1,7 @@
 package com.smartrent.View.Owner;
 
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.smartrent.Controller.dataservice;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,13 +24,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class AIChatPage {
 
-    // --- IMPORTANT: REPLACE WITH YOUR GOOGLE AI STUDIO API KEY ---
-    private static final String API_KEY = "AIzaSyA31qdHZAQSivAn88iImkAlzk_VLKv41so";
-    // --- FIXED: Updated the model name to a valid and current one ---
+    private static final String API_KEY = "AIzaSyA31qdHZAQSivAn88iImkAlzk_VLKv41so"; // Replace with your actual Gemini API Key
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + API_KEY;
 
     private VBox chatMessagesContainer;
@@ -37,13 +40,19 @@ public class AIChatPage {
     private Button sendButton;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    private final dataservice ds;
+    private final String ownerId;
+
+    public AIChatPage(dataservice ds, String ownerId) {
+        this.ds = ds;
+        this.ownerId = ownerId;
+    }
+
     public Node getView(Runnable onBackAction) {
-        // --- Main Layout ---
         VBox mainLayout = new VBox(20);
         mainLayout.setPadding(new Insets(20, 40, 20, 40));
         mainLayout.setStyle("-fx-background-color: #F9FAFB;");
 
-        // --- Header ---
         Button backButton = new Button("← Back to Dashboard");
         backButton.setFont(Font.font("System", FontWeight.SEMI_BOLD, 14));
         backButton.setTextFill(Color.web("#374151"));
@@ -58,7 +67,6 @@ public class AIChatPage {
         HBox header = new HBox(backButton);
         header.setAlignment(Pos.CENTER_LEFT);
 
-        // --- Chat History Area ---
         chatMessagesContainer = new VBox(10);
         chatMessagesContainer.setPadding(new Insets(20));
 
@@ -68,9 +76,8 @@ public class AIChatPage {
         scrollPane.setStyle("-fx-background: #FFFFFF; -fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1; -fx-border-radius: 12;");
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
-        // --- Message Input Area ---
         messageInput = new TextField();
-        messageInput.setPromptText("Ask about your properties, tenants, or payments...");
+        messageInput.setPromptText("Ask about tenants, rent payments, or maintenance...");
         messageInput.setFont(Font.font("System", 14));
         messageInput.setStyle("-fx-background-radius: 20px; -fx-border-radius: 20px; -fx-border-color: #D1D5DB; -fx-padding: 8px 15px;");
         HBox.setHgrow(messageInput, Priority.ALWAYS);
@@ -83,103 +90,160 @@ public class AIChatPage {
         HBox inputContainer = new HBox(10, messageInput, sendButton);
         inputContainer.setAlignment(Pos.CENTER);
 
-        // --- Event Handling ---
         Runnable sendMessageAction = this::sendMessageAndGetResponse;
         sendButton.setOnAction(e -> sendMessageAction.run());
         messageInput.setOnAction(e -> sendMessageAction.run());
 
         addInitialGreeting();
 
-        // --- Assemble View ---
         mainLayout.getChildren().addAll(header, title, scrollPane, inputContainer);
 
         return mainLayout;
     }
 
-    /**
-     * Handles sending the user's message, displaying it, and fetching the AI response.
-     */
     private void sendMessageAndGetResponse() {
         String messageText = messageInput.getText().trim();
         if (messageText.isEmpty()) {
             return;
         }
 
-        // 1. Add the user's message to the chat UI
         addMessage(messageText, true);
         messageInput.clear();
-
-        // 2. Show a "typing" indicator and disable input
         showTypingIndicator(true);
 
-        // 3. Call the Gemini API in a background thread
-        getGeminiResponse(messageText).thenAccept(aiResponse -> {
-            // 4. When the response arrives, update the UI on the JavaFX thread
-            Platform.runLater(() -> {
-                showTypingIndicator(false); // Hide "typing" indicator
-                addMessage(aiResponse, false); // Add AI's response bubble
-            });
-        }).exceptionally(ex -> {
-            // Handle any errors during the API call
-            Platform.runLater(() -> {
-                showTypingIndicator(false);
-                addMessage("Sorry, I couldn't get a response. Please check your API key and internet connection. Error: " + ex.getMessage(), false);
-            });
-            return null;
-        });
+        fetchContextData().thenAccept(context -> {
+            String fullPrompt = context + "\n\nBased on the context above, answer the following question concisely: " + messageText;
+            getGeminiResponse(fullPrompt)
+                .thenAccept(aiResponse -> Platform.runLater(() -> {
+                    showTypingIndicator(false);
+                    addMessage(aiResponse, false);
+                }))
+                .exceptionally(this::handleApiError);
+        }).exceptionally(this::handleApiError);
     }
 
     /**
-     * Sends a prompt to the Gemini API and returns the response.
-     * @param userMessage The user's message to send to the AI.
-     * @return A CompletableFuture that will complete with the AI's text response.
-     */
+    * MODIFIED: This method now fetches all data and filters it to provide context.
+    */
+    private CompletableFuture<String> fetchContextData() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // --- Fetch Tenant and Flat Data ---
+                List<QueryDocumentSnapshot> flats = ds.getFlatsByOwner(this.ownerId);
+                String tenantContext;
+                if (flats.isEmpty()) {
+                    tenantContext = "Property and Tenant Overview:\nYou have no properties listed.";
+                } else {
+                    tenantContext = "Property and Tenant Overview:\n" + flats.stream()
+                        .map(doc -> {
+                            String tenantName = doc.getString("tenantName");
+                            if (tenantName != null && !tenantName.isEmpty()) {
+                                return String.format("- Flat %s in %s is occupied by %s (Email: %s, Rent: ₹%.0f).",
+                                        doc.getString("flatNo"),
+                                        doc.getString("societyName"),
+                                        tenantName,
+                                        doc.getString("tenantEmail"),
+                                        doc.getDouble("rent"));
+                            } else {
+                                 return String.format("- Flat %s in %s is currently vacant.",
+                                        doc.getString("flatNo"),
+                                        doc.getString("societyName"));
+                            }
+                        })
+                        .collect(Collectors.joining("\n"));
+                }
+
+                // --- Fetch Maintenance Request Data ---
+                List<QueryDocumentSnapshot> requests = ds.getMaintenanceRequestsByOwner(this.ownerId);
+                String maintenanceContext;
+                if (requests.isEmpty()) {
+                    maintenanceContext = "Recent Maintenance Requests:\nThere are no recent maintenance requests.";
+                } else {
+                    maintenanceContext = "Recent Maintenance Requests:\n" + requests.stream()
+                        .map(doc -> {
+                            String society = doc.getString("societyName");
+                            String flat = doc.getString("flatNo");
+                            String location = (society != null && flat != null)
+                                    ? String.format("%s, Flat %s", society, flat)
+                                    : doc.getString("flatId"); // Fallback
+                            return String.format("- Request from '%s' for '%s': '%s' (Status: %s)",
+                                    doc.getString("tenantName"),
+                                    location,
+                                    doc.getString("description"),
+                                    doc.getString("status"));
+                        })
+                        .collect(Collectors.joining("\n"));
+                }
+
+                // --- NEW: Fetch Rent Payment Data ---
+                // FIXED: This now calls the correct two-argument method.
+                List<QueryDocumentSnapshot> ownerPayments = ds.getPaymentData("Payments", this.ownerId);
+                String paymentContext;
+                if (ownerPayments == null || ownerPayments.isEmpty()) {
+                    paymentContext = "Rent Payment History:\nNo payments found for you.";
+                } else {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    paymentContext = "Rent Payment History (most recent first):\n" + ownerPayments.stream()
+                        .map(doc -> String.format("- Tenant '%s' paid ₹%.0f on %s.",
+                                doc.getString("tenantName"),
+                                doc.getDouble("rentAmount"),
+                                sdf.format(doc.getTimestamp("paymentDate").toDate())))
+                        .collect(Collectors.joining("\n"));
+                }
+
+                // --- Combine all context ---
+                return "Context:\n" + tenantContext + "\n\n" + maintenanceContext + "\n\n" + paymentContext;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "Context: Could not retrieve data. Error: " + e.getMessage();
+            }
+        });
+    }
+
+
+    private Void handleApiError(Throwable ex) {
+        Platform.runLater(() -> {
+            showTypingIndicator(false);
+            String errorMessage = "Sorry, an error occurred. Please check your API key and internet connection.";
+            if (ex.getCause() != null) {
+                 errorMessage += " Details: " + ex.getCause().getMessage();
+            }
+            addMessage(errorMessage, false);
+        });
+        return null;
+    }
+
     private CompletableFuture<String> getGeminiResponse(String userMessage) {
-        // Create a JSON payload following the Gemini API's structure
         JSONObject textPart = new JSONObject();
         textPart.put("text", userMessage);
-
         JSONObject parts = new JSONObject();
         parts.put("parts", new JSONArray().put(textPart));
-
         JSONObject payload = new JSONObject();
         payload.put("contents", new JSONArray().put(parts));
 
-        // Build the HTTP request
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .build();
 
-        // Send the request asynchronously and process the response
         return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
                     if (response.statusCode() == 200) {
                         return parseResponse(response.body());
                     } else {
-                        // If the API returns an error, pass the error message forward
-                        throw new RuntimeException("API request failed with status code " + response.statusCode() + ": " + response.body());
+                        throw new RuntimeException("API request failed: " + response.body());
                     }
                 });
     }
 
-    /**
-     * Parses the JSON response from the Gemini API to extract the content.
-     * @param responseBody The JSON string from the API.
-     * @return The extracted text content from the AI.
-     */
     private String parseResponse(String responseBody) {
         try {
             JSONObject jsonResponse = new JSONObject(responseBody);
             JSONArray candidates = jsonResponse.getJSONArray("candidates");
             if (candidates.length() > 0) {
-                JSONObject firstCandidate = candidates.getJSONObject(0);
-                JSONObject content = firstCandidate.getJSONObject("content");
-                JSONArray parts = content.getJSONArray("parts");
-                if (parts.length() > 0) {
-                    return parts.getJSONObject(0).getString("text");
-                }
+                return candidates.getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text");
             }
             return "Sorry, I received an empty response.";
         } catch (Exception e) {
@@ -188,78 +252,52 @@ public class AIChatPage {
         }
     }
 
-
-    /**
-     * Adds a message bubble to the chat container.
-     * @param message The text of the message.
-     * @param isUser True if the message is from the user, false if from the AI.
-     */
     private void addMessage(String message, boolean isUser) {
         Node chatBubble = createChatBubble(message, isUser);
         chatMessagesContainer.getChildren().add(chatBubble);
-
-        // Auto-scroll to the bottom to show the latest message
         Platform.runLater(() -> scrollPane.setVvalue(1.0));
     }
 
-    /**
-     * Creates a styled chat bubble Node.
-     */
     private Node createChatBubble(String text, boolean isUser) {
         Label messageLabel = new Label(text);
         messageLabel.setWrapText(true);
         messageLabel.setPadding(new Insets(10, 15, 10, 15));
         messageLabel.setFont(Font.font("System", 14.5));
-
         VBox bubble = new VBox(messageLabel);
-        bubble.setMaxWidth(500); // Max width of a bubble
+        bubble.setMaxWidth(500);
 
         if (isUser) {
-            // Style for user's message bubble
             messageLabel.setTextFill(Color.WHITE);
             bubble.setStyle("-fx-background-color: #4F46E5; -fx-background-radius: 15 15 0 15;");
         } else {
-            // Style for AI's message bubble
             messageLabel.setTextFill(Color.web("#1F2937"));
             bubble.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 15 15 15 0;");
         }
-
-        // Use an HBox to align the bubble to the right (user) or left (AI)
         HBox container = new HBox(bubble);
         container.setAlignment(isUser ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-
         return container;
     }
 
-    /**
-     * Shows or hides a "typing..." indicator and disables/enables the input field.
-     */
     private void showTypingIndicator(boolean show) {
         final String typingIndicatorId = "typing-indicator";
-
         if (show) {
             messageInput.setDisable(true);
             sendButton.setDisable(true);
-
             Node typingBubble = createChatBubble("...", false);
-            typingBubble.setId(typingIndicatorId); // Set an ID to find it later
+            typingBubble.setId(typingIndicatorId);
             chatMessagesContainer.getChildren().add(typingBubble);
             Platform.runLater(() -> scrollPane.setVvalue(1.0));
         } else {
             messageInput.setDisable(false);
             sendButton.setDisable(false);
-            // Remove the typing indicator by its ID
             chatMessagesContainer.getChildren().removeIf(node -> typingIndicatorId.equals(node.getId()));
-            messageInput.requestFocus(); // Set focus back to the input field
+            messageInput.requestFocus();
         }
     }
 
-    /**
-     * Adds the initial welcome message when the page loads.
-     */
     private void addInitialGreeting() {
         Platform.runLater(() -> {
-            addMessage("Hello! I'm your AI assistant powered by Gemini. How can I help you today?", false);
+            addMessage("Hello! I can provide info on your tenants, properties, rent history, and recent maintenance requests. How can I help?", false);
         });
     }
 }
