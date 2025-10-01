@@ -1,0 +1,205 @@
+package com.smartrent.View.Tenant;
+
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.smartrent.Controller.dataservice;
+import com.smartrent.Model.Tenant.PaymentData;
+import com.smartrent.Controller.ReceiptService; 
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser; 
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+public class TenantPaymentHistory {
+
+    private final String tenantEmail;
+
+    public TenantPaymentHistory(String tenantEmail) {
+        this.tenantEmail = tenantEmail;
+    }
+
+    public VBox getView() {
+        VBox paymentList = new VBox(15);
+        paymentList.setPadding(new Insets(10));
+        populatePaymentHistory(paymentList, this.tenantEmail);
+
+        ScrollPane scrollPane = new ScrollPane(paymentList);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPadding(new Insets(10));
+        scrollPane.setStyle("-fx-background-color: transparent;");
+
+        Label title = new Label("Payment History");
+        title.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 32));
+        title.setTextFill(Color.web("#1f2937"));
+
+        Label subtitle = new Label("Track all your rent payments and download receipts");
+        subtitle.setFont(Font.font("Arial", FontWeight.NORMAL, 15));
+        subtitle.setTextFill(Color.web("#6b7280"));
+
+        VBox headingBox = new VBox(6, title, subtitle);
+        headingBox.setAlignment(Pos.TOP_LEFT);
+        headingBox.setPadding(new Insets(20, 0, 10, 10));
+
+        VBox mainContent = new VBox(10, headingBox, scrollPane);
+        mainContent.setPadding(new Insets(30, 40, 30, 30));
+        mainContent.setStyle("-fx-background-color: #f3f4f6;");
+        mainContent.setPrefWidth(1000);
+
+        HBox root = new HBox(mainContent);
+        root.setPrefSize(1200, 800);
+
+        VBox container = new VBox(root);
+        return container;
+    }
+
+    private void populatePaymentHistory(VBox container, String tenantEmail) {
+        ProgressIndicator loading = new ProgressIndicator();
+        container.getChildren().setAll(loading);
+
+        Task<List<PaymentData>> fetchPaymentsTask = new Task<>() {
+            @Override
+            protected List<PaymentData> call() throws Exception {
+                dataservice ds = new dataservice();
+                List<QueryDocumentSnapshot> documents = ds.getPaymentsForTenant(tenantEmail);
+                List<PaymentData> payments = new ArrayList<>();
+                if (documents != null) {
+                    for (QueryDocumentSnapshot doc : documents) {
+                        payments.add(doc.toObject(PaymentData.class));
+                    }
+                }
+                return payments;
+            }
+        };
+
+        fetchPaymentsTask.setOnSucceeded(e -> {
+            container.getChildren().clear();
+            List<PaymentData> payments = fetchPaymentsTask.getValue();
+            if (payments.isEmpty()) {
+                container.getChildren().add(new Label("No payment history found."));
+            } else {
+                for (PaymentData payment : payments) {
+                    container.getChildren().add(createPaymentCard(payment));
+                }
+            }
+        });
+
+        fetchPaymentsTask.setOnFailed(e -> {
+            container.getChildren().setAll(new Label("Error: Failed to load payment history."));
+            fetchPaymentsTask.getException().printStackTrace();
+        });
+
+        new Thread(fetchPaymentsTask).start();
+    }
+
+    /**
+     * MODIFIED: This method now displays the society name and flat number.
+     */
+    private VBox createPaymentCard(PaymentData payment) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String date = sdf.format(payment.getPaymentDate().toDate());
+        String amount = "₹" + String.format("%,.0f", payment.getRentAmount());
+        String status = "Paid";
+
+        // Construct a more detailed description string for the property
+        String locationInfo = (payment.getSocietyName() != null && payment.getFlatNo() != null)
+            ? String.format("%s, Flat %s", payment.getSocietyName(), payment.getFlatNo())
+            : "N/A";
+
+        Label dateLabel = new Label("Payment Date: " + date);
+        dateLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        dateLabel.setTextFill(Color.web("#1f2937"));
+        
+        Label locationLabel = new Label("Property: " + locationInfo);
+        locationLabel.setFont(Font.font("Arial", 12));
+        locationLabel.setTextFill(Color.web("#6b7280"));
+
+        Label amountLabel = new Label("Amount: " + amount);
+        amountLabel.setTextFill(Color.web("#6b7280"));
+        amountLabel.setFont(Font.font("Arial", 13));
+
+        Label statusLabel = new Label(status);
+        statusLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        statusLabel.setTextFill(Color.WHITE);
+
+        String bgColor = "#22c55e";
+        statusLabel.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 12; -fx-padding: 5 14;");
+
+        Button downloadBtn = new Button("Download");
+        downloadBtn.setFont(Font.font("Arial", FontWeight.SEMI_BOLD, 12));
+        downloadBtn.setStyle("-fx-background-color: #636ae8; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 14;");
+        downloadBtn.setCursor(Cursor.HAND);
+        downloadBtn.setOnMouseEntered(e -> downloadBtn.setStyle(downloadBtn.getStyle() + "-fx-cursor: hand; -fx-opacity: 0.9;"));
+        downloadBtn.setOnMouseExited(e -> downloadBtn.setStyle(downloadBtn.getStyle().replace("-fx-cursor: hand; -fx-opacity: 0.9;", "")));
+        downloadBtn.setOnAction(e -> handleDownloadReceipt(payment));
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox topRow = new HBox(dateLabel, spacer, statusLabel, downloadBtn);
+        topRow.setSpacing(10);
+        topRow.setAlignment(Pos.CENTER_LEFT);
+
+        // Add the new location label to the card's layout
+        VBox card = new VBox(8, topRow, locationLabel, amountLabel);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 4, 0, 0, 2); -fx-border-color: #e5e7eb; -fx-border-radius: 12;");
+        card.setOnMouseEntered(e -> card.setStyle(card.getStyle() + "-fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 8, 0, 0, 3);"));
+        card.setOnMouseExited(e -> card.setStyle(card.getStyle().replace("-fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 8, 0, 0, 3);", "")));
+
+        return card;
+    }
+    
+    private void handleDownloadReceipt(PaymentData payment) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Rent Receipt");
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String date = sdf.format(payment.getPaymentDate().toDate());
+        fileChooser.setInitialFileName("RentReceipt-" + date + ".pdf");
+        
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("PDF files (*.pdf)", "*.pdf");
+        fileChooser.getExtensionFilters().add(extFilter);
+
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            Task<Void> generatePdfTask = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    ReceiptService receiptService = new ReceiptService();
+                    receiptService.generateReceipt(payment, file.getAbsolutePath());
+                    return null;
+                }
+            };
+
+            generatePdfTask.setOnSucceeded(e -> {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Success");
+                alert.setHeaderText("Receipt Downloaded");
+                alert.setContentText("The receipt has been saved successfully to:\n" + file.getAbsolutePath());
+                alert.showAndWait();
+            });
+
+            generatePdfTask.setOnFailed(e -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Download Failed");
+                alert.setContentText("Could not generate the receipt. Please try again.");
+                alert.showAndWait();
+                generatePdfTask.getException().printStackTrace();
+            });
+
+            new Thread(generatePdfTask).start();
+        }
+    }
+}
