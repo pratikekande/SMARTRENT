@@ -95,6 +95,5 @@ mvn javafx:run
    * Owners and tenants can register and access their role-based dashboards.
    * Explore rent tracking, maintenance requests, file uploads, and AI chatbot features.
 
-```
 
 
