@@ -53,3 +53,48 @@
 
 ---
 
+
+## 🚀 Setup & Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/pratikekande/SMARTRENT.git
+cd SMARTRENT
+````
+
+2. **Open the project in your IDE**
+
+   * Recommended: **IntelliJ IDEA** or **VS Code** with Java and Maven plugins.
+
+3. **Set up Firebase**
+
+   * Go to [Firebase Console](https://console.firebase.google.com/).
+   * Create a new project.
+   * Enable **Authentication**, **Firestore Database**, and **Storage**.
+   * Generate a service account key → download the `firebase-key.json`.
+   * Place it inside:
+
+   ```
+   superx/src/main/resources/
+   ```
+
+4. **Build the project (Maven)**
+
+```bash
+mvn clean install
+```
+
+5. **Run the project**
+
+```bash
+mvn javafx:run
+```
+
+6. **Login / Register**
+
+   * Owners and tenants can register and access their role-based dashboards.
+   * Explore rent tracking, maintenance requests, file uploads, and AI chatbot features.
+
+```
+
+
