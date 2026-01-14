@@ -95,5 +95,30 @@ mvn javafx:run
    * Owners and tenants can register and access their role-based dashboards.
    * Explore rent tracking, maintenance requests, file uploads, and AI chatbot features.
 
+7. **Screenshots**
+   * HomePage
+   <img width="1920" height="1200" alt="HomePage" src="https://github.com/user-attachments/assets/622d8714-08c4-4c4d-ab79-b5de14fb1e09" />
+   
+   * Signin
+   <img width="1920" height="1200" alt="Sigin" src="https://github.com/user-attachments/assets/1df1f1a3-833a-410a-bcff-dcf4f42ad310" />
+   
+   * Owner Dashboard
+     <img width="1919" height="1128" alt="Owner Dashboard" src="https://github.com/user-attachments/assets/30157b0b-b96f-48d4-8d16-bce2b191f46c" />
+     
+   * Tenant Dashboard
+     <img width="1919" height="1124" alt="Tenant Dashboard" src="https://github.com/user-attachments/assets/cd325dfb-cdb8-4d58-b05a-3fc835110582" />
+
+   * Payment
+     <img width="1919" height="1121" alt="Payment Page" src="https://github.com/user-attachments/assets/f89d1948-54cd-46ec-8fcf-2edbdc82a00a" />
+
+   * Maintenance
+     <img width="1919" height="1124" alt="Maintenance" src="https://github.com/user-attachments/assets/5f16248e-bd59-4f20-a300-52246cbe6c4b" />
+
+   * Rent
+     <img width="1919" height="1123" alt="Rent Management" src="https://github.com/user-attachments/assets/5d84bb2d-7ba1-4eb0-ad16-f6e73825a077" />
+
+     
+  
+
 
 
