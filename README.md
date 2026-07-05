@@ -106,35 +106,46 @@ src/main/java/com/smartrent/
    * HomePage
    <img width="1920" height="1200" alt="HomePage" src="https://github.com/user-attachments/assets/622d8714-08c4-4c4d-ab79-b5de14fb1e09" />
    
+   
    * Signin
    <img width="1920" height="1200" alt="Sigin" src="https://github.com/user-attachments/assets/1df1f1a3-833a-410a-bcff-dcf4f42ad310" />
    
+   
    * Owner Dashboard
      <img width="1919" height="1128" alt="Owner Dashboard" src="https://github.com/user-attachments/assets/30157b0b-b96f-48d4-8d16-bce2b191f46c" />
+     
 
    * Tenant Management
     <img width="1919" height="1126" alt="Tenat-Managemet" src="https://github.com/user-attachments/assets/937ed834-a185-4e2f-8b8e-c2a3cfb2b1ef" />
+    
 
     * Rent History (Owner)
     <img width="1915" height="1123" alt="Rent-History" src="https://github.com/user-attachments/assets/730727db-05ff-4eef-af9e-ac7a8883d60f" />
+    
 
     * Maintenance Management
 <img width="1912" height="1120" alt="Maintennace" src="https://github.com/user-attachments/assets/057844aa-5fbf-41a0-8641-a672f2ffb763" />
 
+
     ### AI Chat Assistant (Lily)
 <img width="1910" height="1124" alt="AI-ChatBot" src="https://github.com/user-attachments/assets/bec4931e-d687-4ff9-a0bb-2ca2a0caa864" />
 
+
    * Tenant Dashboard
      <img width="1919" height="1124" alt="Tenant Dashboard" src="https://github.com/user-attachments/assets/cd325dfb-cdb8-4d58-b05a-3fc835110582" />
+     
 
    * Pay Rent
      <img width="1919" height="1121" alt="Payment Page" src="https://github.com/user-attachments/assets/f89d1948-54cd-46ec-8fcf-2edbdc82a00a" />
+     
 
    * Maintenance
      <img width="1919" height="1124" alt="Maintenance" src="https://github.com/user-attachments/assets/5f16248e-bd59-4f20-a300-52246cbe6c4b" />
+     
 
    * Rent Receipt (PDF)
 <img width="1245" height="944" alt="Rent-Receipt" src="https://github.com/user-attachments/assets/40363f85-a950-4fd2-9008-b2898bc5d735" />
+
 
 
  ## 🚀 Setup & Installation
